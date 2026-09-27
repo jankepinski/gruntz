@@ -2,7 +2,7 @@ import { useEffect, useState } from 'preact/hooks';
 import type { BotLevel, LevelData, PlayerInfo } from '@gruntz/core';
 import { lang, localized, onLangChange, setLang, t, type Key } from '../i18n/index.ts';
 import { BATTLE_LEVELS, CAMPAIGN, levelById, questWorlds } from '../game/levels.ts';
-import { settings, useStore } from '../game/store.ts';
+import { settings } from '../game/store.ts';
 import { loadProgress, secretUnlocked, worldLetters } from '../game/progress.ts';
 import { GameScreen, type GameLaunch } from './GameScreen.tsx';
 import { MultiplayerScreen } from './Multiplayer.tsx';
