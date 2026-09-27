@@ -18,6 +18,7 @@ import { mat } from './placeholders.ts';
 import { LIQUID } from './tileKit.ts';
 import { groundY } from './elevation.ts';
 import { ventLavaMaterial } from './materials.ts';
+import type { LightPool } from './lightPool.ts';
 
 /**
  * Views of the world hazards (see core/sim/worldHazards). Each world dresses the same
@@ -31,6 +32,8 @@ export interface HazardFrame {
   tick: number;
   dt: number;
   time: number;
+  /** Shared point lights (see LightPool): glowing hazardz ask for one every frame. */
+  lights?: LightPool;
 }
 
 export interface HazardView {
@@ -304,7 +307,9 @@ export class StaticHazardView implements HazardView {
   private sparks: THREE.LineSegments | null = null;
   private column: THREE.Mesh | null = null;
   private burst: THREE.Mesh[] = [];
-  private light: THREE.PointLight;
+  /** The glow asked of the light pool every frame (where, what colour, how bright). */
+  private lightAnchor = new THREE.Object3D();
+  private light = { color: new THREE.Color(), intensity: 0, distance: 4 };
   private pit: THREE.Mesh | null = null;
   private fountain: LavaFountain | null = null;
   private vent: ReturnType<typeof ventLavaMaterial> | null = null;
@@ -332,9 +337,9 @@ export class StaticHazardView implements HazardView {
     }
     this.object.add(this.effect);
     const color = this.style === 'outlet' ? 0x8ad8ff : this.style === 'candle' ? 0xffc060 : 0xff7a2a;
-    this.light = new THREE.PointLight(color, 0, 4, 2);
-    this.light.position.y = 0.8;
-    this.object.add(this.light);
+    this.light.color.set(color);
+    this.lightAnchor.position.y = 0.8;
+    this.object.add(this.lightAnchor);
     switch (this.style) {
       case 'geyser': {
         this.fountain = new LavaFountain();
@@ -467,6 +472,7 @@ export class StaticHazardView implements HazardView {
         break;
       }
     }
+    ctx.lights?.request(this.lightAnchor, this.light.color, this.light.intensity, this.light.distance);
   }
 }
 

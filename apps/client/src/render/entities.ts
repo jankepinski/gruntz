@@ -29,6 +29,7 @@ import { ClipPlayer, createGrunt, createProp, type GruntModel } from './models.t
 import { themeRock } from './tileKit.ts';
 import { groundY } from './elevation.ts';
 import { createHazardView } from './hazardViews.ts';
+import { LightPool } from './lightPool.ts';
 
 export interface FrameCtx {
   world: World;
@@ -1182,9 +1183,12 @@ export class EntityLayer {
   readonly group = new THREE.Group();
   /** holder: lifts the view to the ground height under it (high ground, stairz). */
   private views = new Map<EntityId, { kind: string; view: View; holder: THREE.Group }>();
+  /** Point lights shared by the glowing hazardz. */
+  private lights = new LightPool();
 
   constructor(private camera: () => THREE.Camera) {
     this.group.name = 'entities';
+    this.group.add(this.lights.group);
   }
 
   private create(e: Entity, theme: ThemeId): View | null {
@@ -1220,8 +1224,10 @@ export class EntityLayer {
     }
   }
 
-  sync(ctx: FrameCtx): void {
+  /** `focus`: what the camera looks at (world x/z): the shared lights go to glows around it. */
+  sync(ctx: FrameCtx, focus?: { x: number; z: number }): void {
     const w = ctx.world;
+    const frame = { ...ctx, lights: this.lights };
     for (const [id, entry] of this.views) {
       const e = w.entities.get(id);
       if (!e || e.kind !== entry.kind) {
@@ -1242,13 +1248,14 @@ export class EntityLayer {
         this.views.set(e.id, entry);
         this.group.add(holder);
       }
-      entry.view.update(e, ctx);
+      entry.view.update(e, frame);
       // (flyers place their own ground parts)
       if (lifted && !FREE_VIEWS.has(e.kind)) {
         const p = entry.view.object.position;
         entry.holder.position.y = groundY(w, p.x, p.z);
       }
     }
+    this.lights.flush(focus ?? { x: w.width / 2, z: w.height / 2 });
   }
 
   /** Screen-space picking of gruntz: nearest grunt whose body is under the cursor. */
