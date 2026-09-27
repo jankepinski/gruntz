@@ -1834,13 +1834,9 @@ def stilt_hut():
     for i in range(5):
         z = 0.08 + i * 0.1
         parts.append(_cyl(0.011, 0.2, (0.72 - z * 0.1, -0.35, z), 'Fix_8a6a40', verts=5, rot=(0, math.pi / 2, 0)))
-    # lantern and leaves on the roof
+    # lantern by the door
     parts.append(_ico(0.05, (0.35, -0.55, 0.95), 'Fix_ffb050', sub=2))
     parts.append(_cyl(0.006, 0.12, (0.35, -0.55, 1.05), 'Fix_2a2a2a', verts=4))
-    rng = random.Random(304)
-    for i in range(5):
-        a = rng.uniform(0, math.tau)
-        parts.append(_leaf(0.3, 0.1, (math.cos(a) * 0.5, 0.03 + math.sin(a) * 0.4, 1.28), a, 0.12, 'Fix_3f8a36', tilt=0.2, segments=4))
     return finish(merge(parts, 'stiltHut'), 'stiltHut', smooth=False)
 
 

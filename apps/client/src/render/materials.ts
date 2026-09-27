@@ -146,22 +146,117 @@ export type GroundPattern = 'grass' | 'sand' | 'snow' | 'icing' | 'felt' | 'wood
 const PATTERN_ID: Record<GroundPattern, number> = { grass: 0, sand: 1, snow: 2, icing: 3, felt: 4, wood: 5, moon: 6 };
 
 /**
+ * Velvet grass, baked once: a tileable height map of little leaf rosettes (period VELVET_PERIOD
+ * tiles). R = height of the topmost leaf surface (0..1 of the grass height), G = how far along
+ * that leaf we are (0 root .. 1 tip, for the colour ramp), B = a random number per leaf.
+ * Each rosette has a few leaves growing out of one root, rising and opening outwards.
+ */
+const VELVET_PERIOD = 4;
+let velvetTex: THREE.DataTexture | null = null;
+function velvetTexture(): THREE.DataTexture {
+  if (velvetTex) return velvetTex;
+  const size = 256;
+  const top = new Float32Array(size * size);
+  const along = new Float32Array(size * size);
+  const ids = new Float32Array(size * size);
+  const hash = (x: number, y: number, s: number) => {
+    let h = (Math.imul(x, 374761393) + Math.imul(y, 668265263) + Math.imul(s, 2246822519)) >>> 0;
+    h = Math.imul(h ^ (h >>> 13), 1274126177) >>> 0;
+    return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+  };
+  const layers = [
+    { dens: 3, gap: 0.4, tall: 1, leaves: 3, seed: 1 },
+    { dens: 5, gap: 0.58, tall: 0.6, leaves: 2, seed: 2 },
+  ];
+  for (const layer of layers) {
+    const n = layer.dens * VELVET_PERIOD;
+    const texPerCell = size / n;
+    for (let cy = 0; cy < n; cy++)
+      for (let cx = 0; cx < n; cx++) {
+        const r = (k: number) => hash(cx, cy, layer.seed * 97 + k);
+        if (r(0) < layer.gap) continue;
+        const rootX = 0.5 + (r(1) - 0.5) * 0.4;
+        const rootY = 0.5 + (r(2) - 0.5) * 0.4;
+        const h = (0.55 + 0.45 * r(3)) * layer.tall;
+        const turn = r(4) * Math.PI * 2;
+        for (let k = 0; k < layer.leaves; k++) {
+          const ang = turn + (k * Math.PI * 2) / layer.leaves + (r(5 + k) - 0.5) * 0.8;
+          const dx = Math.cos(ang);
+          const dy = Math.sin(ang);
+          const id = r(10 + k);
+          // rasterise the leaf's cross-sections from the root up, keeping the highest
+          for (let step = 0; step <= 16; step++) {
+            const rel = step / 16;
+            const L = rel * h;
+            const len = 0.27 * (1 - rel * 0.8);
+            const wid = len * 0.45;
+            const ccx = cx + rootX + dx * (0.05 + 0.3 * rel);
+            const ccy = cy + rootY + dy * (0.05 + 0.3 * rel);
+            const x0 = Math.floor((ccx - len) * texPerCell);
+            const x1 = Math.ceil((ccx + len) * texPerCell);
+            const y0 = Math.floor((ccy - len) * texPerCell);
+            const y1 = Math.ceil((ccy + len) * texPerCell);
+            for (let ty = y0; ty <= y1; ty++)
+              for (let tx = x0; tx <= x1; tx++) {
+                const px = (tx + 0.5) / texPerCell - ccx;
+                const py = (ty + 0.5) / texPerCell - ccy;
+                const ea = (px * dx + py * dy) / len;
+                const eb = (-px * dy + py * dx) / wid;
+                if (ea * ea + eb * eb > 1) continue;
+                const i = (((ty % size) + size) % size) * size + (((tx % size) + size) % size);
+                if (L > top[i]!) {
+                  top[i] = L;
+                  along[i] = rel;
+                  ids[i] = id;
+                }
+              }
+          }
+        }
+      }
+  }
+  const data = new Uint8Array(size * size * 4);
+  for (let i = 0; i < size * size; i++) {
+    data[i * 4] = Math.round(top[i]! * 255);
+    data[i * 4 + 1] = Math.round(along[i]! * 255);
+    data[i * 4 + 2] = Math.round(ids[i]! * 255);
+    data[i * 4 + 3] = 255;
+  }
+  velvetTex = new THREE.DataTexture(data, size, size, THREE.RGBAFormat);
+  velvetTex.wrapS = velvetTex.wrapT = THREE.RepeatWrapping;
+  velvetTex.magFilter = THREE.LinearFilter;
+  velvetTex.minFilter = THREE.LinearMipmapLinearFilter;
+  velvetTex.generateMipmaps = true;
+  velvetTex.needsUpdate = true;
+  return velvetTex;
+}
+
+/**
  * Ground: large soft patches of two tones plus bare-earth patches (all in world space, so
  * tiles blend seamlessly), fine speckled texture up close, and a surface pattern that
  * belongs to the world: wind ripples in sand, sparkling snow, sprinkles on icing, craters...
  */
-export function groundMaterial(a: number, b: number, dirt: number, pattern: GroundPattern = 'grass'): THREE.MeshStandardMaterial {
-  const material = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.95 });
+export function groundMaterial(
+  a: number,
+  b: number,
+  dirt: number,
+  pattern: GroundPattern = 'grass',
+  velvet = false,
+): THREE.MeshStandardMaterial & { userData: { time: { value: number } } } {
+  const material = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.95 }) as THREE.MeshStandardMaterial & { userData: { time: { value: number } } };
   applyClay(material, 0.6, 0);
   const clay = material.onBeforeCompile;
   const noise = groundNoise();
+  const time = { value: 0 };
+  material.userData.time = time;
   material.onBeforeCompile = (shader, renderer) => {
     clay(shader, renderer);
     shader.uniforms.uGroundA = { value: new THREE.Color(a) };
     shader.uniforms.uGroundB = { value: new THREE.Color(b) };
     shader.uniforms.uGroundDirt = { value: new THREE.Color(dirt) };
     shader.uniforms.uGroundNoise = { value: noise };
-    shader.defines = { ...shader.defines, GROUND_PATTERN: PATTERN_ID[pattern] };
+    shader.uniforms.uTime = time;
+    if (velvet) shader.uniforms.uVelvet = { value: velvetTexture() };
+    shader.defines = { ...shader.defines, GROUND_PATTERN: PATTERN_ID[pattern], ...(velvet ? { VELVET: 1, VELVET_PERIOD: `${VELVET_PERIOD}.0` } : {}) };
     shader.fragmentShader = shader.fragmentShader
       .replace(
         'uniform float uClayDetail;',
@@ -170,7 +265,11 @@ export function groundMaterial(a: number, b: number, dirt: number, pattern: Grou
         uniform vec3 uGroundB;
         uniform vec3 uGroundDirt;
         uniform sampler2D uGroundNoise;
+        uniform float uTime;
         float gHash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+        #ifdef VELVET
+        uniform sampler2D uVelvet;
+        #endif
         vec2 gHash2(vec2 p) { p = vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3))); return fract(sin(p) * 43758.5453); }`,
       )
       .replace(
@@ -255,11 +354,51 @@ export function groundMaterial(a: number, b: number, dirt: number, pattern: Grou
             g *= 1.0 + crater;
             groundBump = crater * 3.0;
           #endif
+          #ifdef VELVET
+          {
+            // One pass over a baked height map instead of stacked shells: walk down the view
+            // ray through the grass layer, stop at the first leaf, light the pixel once.
+            vec3 nW = normalize((vec4(vNormal, 0.0) * viewMatrix).xyz);
+            float upward = smoothstep(0.75, 0.95, nW.y);
+            float bareV = smoothstep(0.55, 0.72, n1.b * 0.75 + n2.g * 0.25);
+            if (upward > 0.0 && bareV < 0.98) {
+              vec3 V = normalize(cameraPosition - vClayWorld);
+              float grow = (0.55 + 0.5 * smoothstep(0.25, 0.75, texture2D(uGroundNoise, w / 9.0 + 0.17).g)) * (1.0 - bareV);
+              vec2 wind = normalize(vec2(0.8, 0.45));
+              float gust = 0.5 + 0.5 * sin(dot(w, wind) * 0.55 - uTime * 1.4);
+              vec2 toSun = vec2(-0.6, 0.45);
+              // contact shade: a blurred (lower mip) look at the leaves around this spot
+              float crowd = smoothstep(0.04, 0.35, texture2D(uVelvet, w / VELVET_PERIOD, 2.5).r * grow);
+              bool hit = false;
+              for (int i = 0; i < 8; i++) {
+                float L = 1.0 - float(i) / 7.0;
+                vec2 pw = w + V.xz * (L * 0.1 / max(V.y, 0.25)) - wind * (0.02 + 0.05 * gust) * L * L;
+                vec4 t = texture2D(uVelvet, pw / VELVET_PERIOD);
+                float h = t.r * grow;
+                if (h > 0.03 && h >= L - 0.07) {
+                  float rel = t.g;
+                  // a taller leaf between us and the sun shades this one
+                  float over = texture2D(uVelvet, (pw + toSun * 0.05) / VELVET_PERIOD).r * grow;
+                  float shade = mix(0.6, 1.22, rel) * (0.92 + 0.16 * t.b) * (over > h + 0.12 ? 0.84 : 1.0) * (1.0 - 0.22 * crowd * (1.0 - rel));
+                  vec3 leaf = mix(g * 0.94, g * vec3(1.06, 1.15, 0.9), rel) * shade * (1.0 + 0.06 * gust * L);
+                  g = mix(g, leaf, upward);
+                  hit = true;
+                  break;
+                }
+              }
+              if (!hit) {
+                // bare ground between the plants: soft little shadows of the leaves nearby
+                float near = texture2D(uVelvet, (w + toSun * 0.06) / VELVET_PERIOD).r * grow;
+                g *= (1.0 - 0.18 * smoothstep(0.15, 0.5, near) * upward) * (1.0 - 0.3 * crowd * upward);
+              }
+            }
+          }
+          #endif
           diffuseColor.rgb *= g;
         }`,
       );
   };
-  material.customProgramCacheKey = () => `ground-${a}-${b}-${dirt}-${pattern}`;
+  material.customProgramCacheKey = () => `ground-${a}-${b}-${dirt}-${pattern}-${velvet}`;
   return material;
 }
 

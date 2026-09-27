@@ -1,4 +1,5 @@
 import { useLayoutEffect, useState } from 'preact/hooks';
+import { presetGraphics, type Graphics } from '../render/graphics.ts';
 
 /** Minimal observable store for the UI. */
 export class Store<S extends object> {
@@ -39,7 +40,11 @@ export interface Settings {
   classicCamera: boolean;
   showLinks: boolean;
   edgeScroll: boolean;
+  /** Legacy single quality switch (kept to migrate old saves into `graphics`). */
   quality: 'low' | 'medium' | 'high';
+  graphics: Graphics;
+  /** Bumped when the graphics defaults change, so old saves can be moved along. */
+  graphicsVersion: number;
   playerName: string;
   volumes: { master: number; sfx: number; music: number; voices: number };
 }
@@ -53,12 +58,22 @@ function loadSettings(): Settings {
     showLinks: true,
     edgeScroll: true,
     quality: 'high',
+    graphics: presetGraphics('high'),
+    graphicsVersion: 3,
     playerName: '',
     volumes: { master: 0.8, sfx: 0.8, music: 0.35, voices: 0.8 },
   };
   try {
     const raw = localStorage.getItem(SETTINGS_KEY);
-    if (raw) return { ...defaults, ...(JSON.parse(raw) as Partial<Settings>) };
+    if (raw) {
+      const saved = JSON.parse(raw) as Partial<Settings>;
+      // Older saves only had a quality switch: turn it into full graphics options.
+      const graphics = saved.graphics ? { ...defaults.graphics, ...saved.graphics } : presetGraphics(saved.quality ?? 'high');
+      graphics.resolution = Math.min(1, graphics.resolution);
+      // v3: the medium and high presets grow velvet grass instead of tufts.
+      if ((saved.graphicsVersion ?? 1) < 3 && graphics.grass === 'tufts' && graphics.shadows !== 'off') graphics.grass = 'velvet';
+      return { ...defaults, ...saved, graphics, graphicsVersion: 3 };
+    }
   } catch {
     /* ignore */
   }

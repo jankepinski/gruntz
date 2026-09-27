@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { GameEnd, Grunt, LevelData, PlayerInfo } from '@gruntz/core';
 import { GameClient } from '../game/GameClient.ts';
-import { useStore } from '../game/store.ts';
+import { settings, useStore } from '../game/store.ts';
 import { WorkerTransport } from '../net/workerTransport.ts';
 import type { GameTransport } from '../net/transport.ts';
 import { t } from '../i18n/index.ts';
 import { Hud } from './Hud.tsx';
+import { SettingsPanel } from './Settings.tsx';
 import { markCompleted } from '../game/progress.ts';
 
 export type GameLaunch =
@@ -28,6 +29,7 @@ export function GameScreen({
   const [client, setClient] = useState<GameClient | null>(null);
   const [menu, setMenu] = useState<{ x: number; y: number; grunt: Grunt } | null>(null);
   const [end, setEnd] = useState<GameEnd | null>(null);
+  const [showSettings, setShowSettings] = useState(false);
 
   useEffect(() => {
     const canvas = canvasRef.current!;
@@ -64,13 +66,32 @@ export function GameScreen({
   return (
     <div class="game-screen" ref={wrapRef}>
       <canvas ref={canvasRef} class="game-canvas" tabIndex={0} />
-      {client && <Hud client={client} />}
+      {client && <Hud client={client} onSettings={() => setShowSettings(true)} />}
+      {client && <FpsMeter client={client} />}
+      {showSettings && (
+        <div class="overlay" onPointerDown={e => e.target === e.currentTarget && setShowSettings(false)}>
+          <SettingsPanel inGame onClose={() => setShowSettings(false)} />
+        </div>
+      )}
       {client && <DragBox client={client} />}
       {client && menu && <ContextMenu client={client} menu={menu} close={() => setMenu(null)} />}
       {client && <PauseOverlay client={client} onExit={onExit} onRestart={launch.kind === 'sp' ? onRestart : undefined} />}
       {client && end && (
         <EndScreen client={client} end={end} onExit={onExit} onRestart={launch.kind === 'sp' ? onRestart : undefined} onNext={end.winner === client.ui.get().team ? onNext : undefined} />
       )}
+    </div>
+  );
+}
+
+/** Frame counter in the corner (optional, from the graphics settings). */
+function FpsMeter({ client }: { client: GameClient }) {
+  const s = useStore(settings);
+  const perf = useStore(client.perf);
+  if (!s.graphics.fps) return null;
+  const tone = perf.fps >= 55 ? 'good' : perf.fps >= 30 ? 'ok' : 'bad';
+  return (
+    <div class={`fps-meter ${tone}`}>
+      <b>{perf.fps}</b> FPS <span>{perf.ms.toFixed(1)} ms</span>
     </div>
   );
 }

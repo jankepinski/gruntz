@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { createWorld, T, tileByName, tileId, type LevelData, type Point, type World } from '@gruntz/core';
 import { GameRenderer } from '../render/renderer.ts';
 import { models } from '../render/models.ts';
+import { settings } from '../game/store.ts';
 import type { EditorModel } from './model.ts';
 
 const OVERLAY_Y = 0.06;
@@ -36,7 +37,7 @@ export class EditorView {
     readonly model: EditorModel,
   ) {
     this.renderer = new GameRenderer(canvas);
-    this.renderer.setQuality('medium');
+    this.renderer.setGraphics(settings.get().graphics);
     const square = () =>
       new THREE.BufferGeometry().setFromPoints([
         new THREE.Vector3(0, 0, 0),

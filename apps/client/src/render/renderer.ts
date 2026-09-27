@@ -6,7 +6,8 @@ import { EntityLayer, type FrameCtx } from './entities.ts';
 import { TerrainView } from './terrain.ts';
 import { themeLighting, themeSky } from './tileKit.ts';
 import { clayRim } from './materials.ts';
-import { PostFX, type Quality } from './postfx.ts';
+import { PostFX } from './postfx.ts';
+import { pixelRatio, presetGraphics, type Graphics, type TerrainOptions } from './graphics.ts';
 
 export type HoverMode = 'none' | 'move' | 'attack' | 'tool' | 'toy' | 'invalid' | 'select';
 
@@ -38,7 +39,8 @@ export class GameRenderer {
   width = 1;
   height = 1;
   private post: PostFX;
-  private quality: Quality = 'high';
+  private graphics: Graphics = presetGraphics('high');
+  private world: World | null = null;
 
   constructor(readonly canvas: HTMLCanvasElement) {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
@@ -106,17 +108,26 @@ export class GameRenderer {
   }
 
   load(world: World): void {
-    this.terrain?.dispose();
-    if (this.terrain) this.scene.remove(this.terrain.group);
+    this.world = world;
     this.entities.dispose();
-    this.terrain = new TerrainView(world.theme);
-    this.terrain.build(world);
-    this.scene.add(this.terrain.group);
+    this.buildTerrain(world);
     const sky = new THREE.Color(themeSky(world.theme));
     this.scene.background = sky;
     this.scene.fog = new THREE.Fog(sky, 70, 140);
     this.applyLighting(world.theme);
     this.rig.bounds.set(new THREE.Vector2(0, 0), new THREE.Vector2(world.width, world.height));
+  }
+
+  private terrainOptions(): TerrainOptions {
+    return { grass: this.graphics.grass, scenery: this.graphics.scenery };
+  }
+
+  private buildTerrain(world: World): void {
+    this.terrain?.dispose();
+    if (this.terrain) this.scene.remove(this.terrain.group);
+    this.terrain = new TerrainView(world.theme, this.terrainOptions());
+    this.terrain.build(world);
+    this.scene.add(this.terrain.group);
   }
 
   /**
@@ -142,14 +153,39 @@ export class GameRenderer {
     this.height = height;
     this.renderer.setSize(width, height, false);
     this.rig.setAspect(width / height);
-    this.post.setQuality(this.quality, width, height);
+    this.post.configure(this.graphics, width, height);
     this.post.setSize(width, height);
   }
 
-  setQuality(quality: Quality): void {
-    this.quality = quality;
-    this.renderer.setPixelRatio(quality === 'low' ? 1 : Math.min(window.devicePixelRatio, 2));
-    this.post.setQuality(quality, this.width, this.height);
+  /** Apply graphics options: resolution, shadows, post effects, and grass/scenery (rebuilds the terrain). */
+  setGraphics(g: Graphics): void {
+    const before = this.graphics;
+    this.graphics = { ...g };
+    const ratio = pixelRatio(g.resolution);
+    if (this.renderer.getPixelRatio() !== ratio) {
+      this.renderer.setPixelRatio(ratio);
+      this.renderer.setSize(this.width, this.height, false);
+    }
+    // Shadows: switching them on or off needs every material rebuilt.
+    const shadows = g.shadows !== 'off';
+    if (this.renderer.shadowMap.enabled !== shadows) {
+      this.renderer.shadowMap.enabled = shadows;
+      this.scene.traverse(o => {
+        const m = (o as THREE.Mesh).material;
+        for (const mat of Array.isArray(m) ? m : m ? [m] : []) mat.needsUpdate = true;
+      });
+    }
+    this.sun.castShadow = shadows;
+    const size = g.shadows === 'high' ? 4096 : 2048;
+    if (this.sun.shadow.mapSize.x !== size) {
+      this.sun.shadow.mapSize.set(size, size);
+      this.sun.shadow.map?.dispose();
+      this.sun.shadow.map = null;
+    }
+    this.sun.shadow.radius = g.shadows === 'high' ? 3 : 2;
+    this.post.configure(g, this.width, this.height);
+    this.post.setSize(this.width, this.height);
+    if (this.world && (before.grass !== g.grass || before.scenery !== g.scenery)) this.buildTerrain(this.world);
   }
 
   toNdc(clientX: number, clientY: number): THREE.Vector2 {

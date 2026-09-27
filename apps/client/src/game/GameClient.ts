@@ -115,7 +115,7 @@ export class GameClient {
 
   private applySettings(): void {
     this.renderer.rig.classic = settings.get().classicCamera;
-    this.renderer.setQuality(settings.get().quality);
+    this.renderer.setGraphics(settings.get().graphics);
   }
 
   private onMessage(msg: GameServerMsg): void {
@@ -435,9 +435,16 @@ export class GameClient {
   private fallbackTimer = 0;
   private lastFrameAt = performance.now();
 
+  /** Frame rate meter (for the optional on-screen counter). */
+  readonly perf = new Store<{ fps: number; ms: number }>({ fps: 0, ms: 0 });
+  private perfFrames = 0;
+  private perfSince = performance.now();
+  private perfWork = 0;
+
   private frame = (now: number, fallback = false): void => {
     if (!fallback) this.raf = requestAnimationFrame(this.frame);
     this.lastFrameAt = now;
+    const workStart = performance.now();
     const dt = Math.min(0.1, (now - this.last) / 1000);
     this.last = now;
     const ui = this.ui.get();
@@ -461,6 +468,14 @@ export class GameClient {
       padsFlashing,
       predict: (g, tick) => this.predictor.position(g, tick),
     });
+    this.perfFrames++;
+    this.perfWork += performance.now() - workStart;
+    if (now - this.perfSince >= 500) {
+      this.perf.set({ fps: Math.round((this.perfFrames * 1000) / (now - this.perfSince)), ms: this.perfWork / this.perfFrames });
+      this.perfFrames = 0;
+      this.perfWork = 0;
+      this.perfSince = now;
+    }
     this.hudTimer += dt;
     if (this.hudTimer > 0.1) {
       this.hudTimer = 0;
