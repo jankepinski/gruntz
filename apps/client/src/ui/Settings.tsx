@@ -104,7 +104,10 @@ function GraphicsTab() {
       </div>
     </div>
   );
-  const flag = (key: 'ao' | 'bloom' | 'antialias' | 'grading' | 'fps', label: Key) => (
+  const flag = (
+    key: 'ao' | 'bloom' | 'antialias' | 'grading' | 'outlines' | 'sharpen' | 'grain' | 'aberration' | 'retro',
+    label: Key,
+  ) => (
     <label class="toggle">
       <input type="checkbox" checked={g[key]} onChange={() => set({ [key]: !g[key] })} />
       <span>{t(label)}</span>
@@ -169,6 +172,35 @@ function GraphicsTab() {
       {flag('bloom', 'settings.bloom')}
       {flag('antialias', 'settings.antialias')}
       {flag('grading', 'settings.grading')}
+      {flag('sharpen', 'settings.sharpen')}
+      <div class="setting-sep" />
+      <h4 class="setting-head">{t('settings.effects')}</h4>
+      {choose(
+        'settings.miniature',
+        g.miniature,
+        [
+          ['off', t('settings.off')],
+          ['subtle', t('settings.miniatureSubtle')],
+          ['strong', t('settings.miniatureStrong')],
+        ],
+        v => set({ miniature: v }),
+      )}
+      {choose(
+        'settings.colorStyle',
+        g.colorStyle,
+        [
+          ['natural', t('settings.styleNatural')],
+          ['vivid', t('settings.styleVivid')],
+          ['warm', t('settings.styleWarm')],
+          ['cool', t('settings.styleCool')],
+          ['cinematic', t('settings.styleCinematic')],
+        ],
+        v => set({ colorStyle: v }),
+      )}
+      {flag('outlines', 'settings.outlines')}
+      {flag('grain', 'settings.grain')}
+      {flag('aberration', 'settings.aberration')}
+      {flag('retro', 'settings.retro')}
       <div class="setting-sep" />
       <label class="toggle">
         <input type="checkbox" checked={g.fps} onChange={() => settings.set({ graphics: { ...g, fps: !g.fps } })} />

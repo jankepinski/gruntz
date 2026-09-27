@@ -1797,6 +1797,14 @@ kbd {
   background: var(--panel-edge);
   margin: 2px 0;
 }
+.setting-head {
+  margin: 2px 0 0;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
 .toggle span {
   display: inline-flex;
   align-items: center;
