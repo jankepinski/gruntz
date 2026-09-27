@@ -8,6 +8,8 @@ interface Particle {
   maxLife: number;
   gravity: number;
   grow: number;
+  /** Ground height the particle bounces on. */
+  floor: number;
 }
 
 interface Pulse {
@@ -60,6 +62,8 @@ export class Effects {
   private materials = new Map<number, THREE.MeshStandardMaterial>();
   texts: FloatingText[] = [];
   onShake?: (amount: number) => void;
+  /** Height of the ground at a point: effects are placed relative to it (high ground, stairz). */
+  groundAt?: (x: number, z: number) => number;
   private time = 0;
 
   private material(color: number): THREE.MeshStandardMaterial {
@@ -72,9 +76,10 @@ export class Effects {
   }
 
   burst(x: number, y: number, z: number, color: number, count: number, speed: number, size = 1, gravity = 9): void {
+    const ground = this.groundAt?.(x, z) ?? 0;
     for (let i = 0; i < count; i++) {
       const mesh = new THREE.Mesh(this.geo, this.material(color));
-      mesh.position.set(x, y, z);
+      mesh.position.set(x, y + ground, z);
       mesh.scale.setScalar(size * (0.6 + Math.random() * 0.8));
       const a = Math.random() * Math.PI * 2;
       const up = 0.4 + Math.random();
@@ -85,7 +90,7 @@ export class Effects {
       );
       this.group.add(mesh);
       const life = 0.5 + Math.random() * 0.5;
-      this.particles.push({ mesh, vel, life, maxLife: life, gravity, grow: 0 });
+      this.particles.push({ mesh, vel, life, maxLife: life, gravity, grow: 0, floor: ground + 0.02 });
     }
   }
 
@@ -101,13 +106,13 @@ export class Effects {
       }),
     );
     mesh.rotation.x = -Math.PI / 2;
-    mesh.position.set(x, y, z);
+    mesh.position.set(x, y + (this.groundAt?.(x, z) ?? 0), z);
     this.group.add(mesh);
     this.pulses.push({ mesh, life, maxLife: life, maxScale: radius });
   }
 
   text(text: string, x: number, z: number, color = '#ffe066', y = 1.1): void {
-    this.texts.push({ text, x, y, z, color, born: this.time });
+    this.texts.push({ text, x, y: y + (this.groundAt?.(x, z) ?? 0), z, color, born: this.time });
   }
 
   handle(fx: Fx, mine: boolean): void {
@@ -185,8 +190,8 @@ export class Effects {
       }
       p.vel.y -= p.gravity * dt;
       p.mesh.position.addScaledVector(p.vel, dt);
-      if (p.mesh.position.y < 0.02 && p.gravity > 0) {
-        p.mesh.position.y = 0.02;
+      if (p.mesh.position.y < p.floor && p.gravity > 0) {
+        p.mesh.position.y = p.floor;
         p.vel.multiplyScalar(0.5);
         p.vel.y = Math.abs(p.vel.y) * 0.3;
       }

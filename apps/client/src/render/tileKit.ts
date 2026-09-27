@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import type { SwitchKind, PyramidKind, ThemeId, TileVisual } from '@gruntz/core';
 import {
@@ -33,23 +34,37 @@ export interface PlacedPieceDef {
   lift?: number;
 }
 
+/** One of the four tiles around a dual-grid cell. */
+export interface CellCorner {
+  /** undefined outside the map. */
+  v: TileVisual | undefined;
+  /** Height level of the tile's top (walls stand one level above what they border). */
+  level: number;
+  /** Walls (cliffs, the land around the map) as opposed to ground you can walk on. */
+  wall: boolean;
+}
+
 export interface TileKit {
   /** Renderable parts of a piece (one per material). */
   parts(key: PieceKey): PieceDef[];
-  /** Pieces of one tile. bare: something stands here (a vent, a fort...): no grass or clutter. */
+  /**
+   * Pieces of one tile, relative to the tile's own height. bare: something stands here (a vent,
+   * a fort...): no grass or clutter. level: top level of a neighbouring tile (0,0 = this one).
+   */
   tilePieces(
     x: number,
     y: number,
     visual: TileVisual,
     neighbour: (dx: number, dy: number) => TileVisual | undefined,
     bare?: boolean,
+    level?: (dx: number, dy: number) => number,
   ): PlacedPieceDef[];
   /**
-   * Pieces for the dual-grid cell centred on tile corner (cx, cy): cliffs, water banks,
-   * chasm walls and the ground itself. corners = the tiles NE, NW, SW, SE of the corner
-   * (undefined outside the map, which counts as high ground).
+   * Pieces for the dual-grid cell centred on tile corner (cx, cy): cliffs (one layer per
+   * height level), water banks, chasm walls and the ground itself. corners = the tiles NE, NW,
+   * SW, SE of the corner.
    */
-  cellPieces(cx: number, cy: number, corners: (TileVisual | undefined)[]): PlacedPieceDef[];
+  cellPieces(cx: number, cy: number, corners: CellCorner[]): PlacedPieceDef[];
   liftTransform(key: PieceKey, level: number): THREE.Matrix4;
   /** Soft map of the liquids (R water, G molten chasm) for shore foam and lava heat, and the lava's flow direction. */
   setLiquidMask(texture: THREE.Texture, width: number, height: number, flow: THREE.Vector2): void;
@@ -322,6 +337,30 @@ function spikesGeometry(): THREE.BufferGeometry {
   base.translate(0, 0.02, 0);
   parts.push(base);
   return mergeGeometries(parts.map(p => p.toNonIndexed()))!;
+}
+
+/**
+ * A flight of four chunky stone steps climbing one height level towards -z (north). Every step
+ * reaches back into the cliff it leans on, and the top one runs a little onto the high ground
+ * so the cliff's rim never shows above it.
+ */
+function stairsGeometry(): THREE.BufferGeometry {
+  const n = 4;
+  const back = -0.82;
+  const parts: THREE.BufferGeometry[] = [];
+  // Hand-cut look: every step a little different in width, depth and tilt.
+  const wobble = [0.02, -0.015, 0.01, -0.02];
+  for (let i = 0; i < n; i++) {
+    const front = 0.5 - i / n + wobble[i]!;
+    const top = ((i + 1) / n) * CLIFF_TOP + (i === n - 1 ? 0.012 : 0);
+    const box = new RoundedBoxGeometry(0.92 + wobble[(i + 1) % n]!, top + 0.1, front - back, 2, 0.06);
+    box.rotateY(wobble[(i + 2) % n]! * 0.6);
+    box.translate(wobble[(i + 3) % n]!, top / 2 - 0.05, (front + back) / 2);
+    parts.push(box);
+  }
+  const merged = mergeGeometries(parts)!;
+  for (const p of parts) p.dispose();
+  return merged;
 }
 
 function arrowGeometry(twoWay: boolean): THREE.BufferGeometry {
@@ -785,6 +824,9 @@ export function createTileKit(theme: ThemeId, options: TerrainOptions = { grass:
   const pyramidBase = new THREE.BoxGeometry(0.9, 0.04, 0.9);
   pyramidBase.translate(0, 0.02, 0);
   def('pyramidBase', pyramidBase, clay(0x6a6a72), false, true);
+  // Steps cut from the world's own cliff rock, a shade lighter so they stand out.
+  const stepColor = new THREE.Color(pal.cliff).lerp(new THREE.Color(pal.rock), 0.35).offsetHSL(0, -0.05, 0.1);
+  def('stairs', stairsGeometry(), clay(stepColor.getHex()), true, true);
 
   // --- pieces modelled in Blender (terrain.glb), recoloured for the theme ---------------
   const gltf = models.get('terrain');
@@ -797,7 +839,7 @@ export function createTileKit(theme: ThemeId, options: TerrainOptions = { grass:
           ? new THREE.Color(pal.ground[0]!).multiplyScalar(1.12).getHex()
           : pal.cliffTop;
       case 'Rock':
-        return key.startsWith('cliff') || key === 'mesa' ? pal.cliff : pal.rock;
+        return key.startsWith('cliff') || key.startsWith('ledge') || key === 'mesa' ? pal.cliff : pal.rock;
       case 'Dirt':
         return pal.dirt;
       case 'Sand':
@@ -833,6 +875,8 @@ export function createTileKit(theme: ThemeId, options: TerrainOptions = { grass:
   const glbMaterial = (role: string, key: string, vertexColors: boolean): THREE.Material => {
     if (role === 'Ground') return groundMat;
     if (role === 'Grass' && key.startsWith('cliff_')) return topMat;
+    // Walkable high ground: the same surface as the ground below.
+    if (role === 'Grass' && key.startsWith('ledge_')) return groundMat;
     if (role === 'Bed') return bed;
     if (role === 'Chasm') return chasm;
     const color = roleColor(role, key);
@@ -856,7 +900,8 @@ export function createTileKit(theme: ThemeId, options: TerrainOptions = { grass:
     if (!gltf) return undefined;
     const cached = glbParts.get(key);
     if (cached) return cached;
-    const node = gltf.scene.getObjectByName(key);
+    // Ledges are cliff pieces with a walkable top.
+    const node = gltf.scene.getObjectByName(key.startsWith('ledge_') ? `cliff_${key.slice(6)}` : key);
     if (!node) return undefined;
     node.updateMatrixWorld(true);
     const inv = new THREE.Matrix4().copy(node.matrixWorld).invert();
@@ -1017,8 +1062,9 @@ export function createTileKit(theme: ThemeId, options: TerrainOptions = { grass:
       return [p];
     },
 
-    tilePieces(x, y, v, nb, bare = false) {
+    tilePieces(x, y, v, nb, bare = false, lv = () => 0) {
       const out: PlacedPieceDef[] = [];
+      const own = lv(0, 0);
       const h = hash2(x * 3, y * 7);
       // Grid-aligned pieces turn in quarter steps, round ones any way (own hash, so the turn
       // is not tied to what gets placed).
@@ -1111,6 +1157,9 @@ export function createTileKit(theme: ThemeId, options: TerrainOptions = { grass:
         case 'crumble':
           out.push({ key: glb ? 'crumble' : 'crumbleCrack', matrix: at(x, y, 0, rot) });
           break;
+        case 'ramp':
+          out.push({ key: 'stairs', matrix: at(x, y, 0, -(v.dir / 8) * Math.PI * 2) });
+          break;
         case 'bridge':
           if (v.over === 'water') out.push({ key: 'waterSurface', matrix: at(x, y) });
           else if (liquid) out.push({ key: 'liquidDeath', matrix: at(x, y) });
@@ -1140,20 +1189,43 @@ export function createTileKit(theme: ThemeId, options: TerrainOptions = { grass:
           });
           break;
       }
-      // Rubble at the foot of cliff walls.
+      const sides: [number, number, number][] = [
+        [0, -1, 0],
+        [1, 0, Math.PI / 2],
+        [0, 1, Math.PI],
+        [-1, 0, -Math.PI / 2],
+      ];
+      // Rubble at the foot of cliff walls (not in front of stairz leading up).
       if (glb && (v.kind === 'ground' || v.kind === 'nogo')) {
-        const walls: [number, number, number][] = [
-          [0, -1, 0],
-          [1, 0, Math.PI / 2],
-          [0, 1, Math.PI],
-          [-1, 0, -Math.PI / 2],
-        ];
-        for (const [dx, dy, r] of walls) {
+        for (const [dx, dy, r] of sides) {
           const n = nb(dx, dy);
-          if (n && n.kind !== 'cliff') continue;
+          if (n && n.kind !== 'cliff' && lv(dx, dy) <= own) continue;
+          if (n?.kind === 'ramp') continue;
           if (hash2(x * 11 + dx * 3, y * 7 + dy * 5) > 0.45) continue;
           const along = (hash2(x * 3 + dy, y * 5 + dx) - 0.5) * 0.4;
           out.push({ key: 'scree', matrix: at(x + dx * 0.36 + dy * along, y + dy * 0.36 + dx * along, 0, r) });
+        }
+      }
+      // Vines or icicles down the edges of walkable high ground.
+      if (glb && decor.wallHang && own > 0 && v.kind !== 'cliff') {
+        for (const [dx, dy, r] of sides) {
+          const n = nb(dx, dy);
+          if (!n || lv(dx, dy) >= own || n.kind === 'ramp') continue;
+          if (hash2(x * 53 + dx * 7, y * 59 + dy * 11) > 0.5) continue;
+          const shift = (hash2(x * 61 + dy, y * 67 + dx) - 0.5) * 0.3;
+          out.push({
+            key: decor.wallHang[Math.floor(hash2(x * 13 + dx, y * 17 + dy) * decor.wallHang.length)]!,
+            // (same turn as on cliff tops: the piece hangs off the side it faces)
+            matrix: at(
+              x + (dy ? shift : 0),
+              y + (dx ? shift : 0),
+              -H,
+              dy ? r + Math.PI : r,
+              0.9 + hash2(x, y * 71) * 0.2,
+              1,
+              1,
+            ),
+          });
         }
       }
       return out;
@@ -1161,14 +1233,16 @@ export function createTileKit(theme: ThemeId, options: TerrainOptions = { grass:
 
     cellPieces(cx, cy, corners) {
       const out: PlacedPieceDef[] = [];
-      const cls = corners.map(terrainClass);
+      const cls = corners.map(c => (c.level > 0 ? 'H' : terrainClass(c.v)));
       const bits = (c: TerrainClass | 'L') =>
         cls.reduce((m, k, i) => (k === c || (c === 'L' && (k === 'W' || k === 'C')) ? m | (1 << i) : m), 0);
-      const place = (key: string, quarters: number) =>
-        out.push({ key, matrix: at(cx - 0.5, cy - 0.5, 0, quarters * (Math.PI / 2)) });
+      const place = (key: string, quarters: number, y = 0) =>
+        out.push({ key, matrix: at(cx - 0.5, cy - 0.5, y, quarters * (Math.PI / 2)) });
       const variant = (base: string, n: number) => `${base}_${Math.floor(hash2(cx * 7 + 1, cy * 13 + 5) * n)}`;
+      /** Corners at or above a level (bits: 0 NE, 1 NW, 2 SW, 3 SE). */
+      const above = (level: number) => corners.reduce((m, c, i) => (c.level >= level ? m | (1 << i) : m), 0);
       if (!gltf) {
-        if (bits('H') !== 15 && bits('L') === 0) place('ground', 0);
+        if (above(1) !== 15 && bits('L') === 0) place('ground', 0);
         return out;
       }
 
@@ -1176,7 +1250,7 @@ export function createTileKit(theme: ThemeId, options: TerrainOptions = { grass:
       const low = bits('L');
       const family = bits('C') ? 'chasm' : 'bank';
       if (low === 0) {
-        if (bits('H') !== 15) place('ground', 0);
+        if (above(1) !== 15) place('ground', 0);
       } else {
         const shape = maskShape(low);
         if (shape.kind === 'full') {
@@ -1187,16 +1261,24 @@ export function createTileKit(theme: ThemeId, options: TerrainOptions = { grass:
         else place(`${family}_convex_0`, shape.k);
       }
 
-      // Cliffs on top.
-      const high = bits('H');
-      if (high) {
+      // Cliffs on top, one layer per height level. A layer whose top you can walk on (high
+      // ground) gets the ground's own surface, walls keep their cliff-top look.
+      const top = corners.reduce((m, c) => Math.max(m, c.level), 0);
+      for (let level = 1; level <= top; level++) {
+        const high = above(level);
+        if (high === 0) break;
+        // Buried under the next layer.
+        if (high === 15 && above(level + 1) === 15) continue;
+        const walkable = corners.some(c => c.level === level && !c.wall);
+        const kind = walkable ? 'ledge' : 'cliff';
+        const y = (level - 1) * H;
         const shape = maskShape(high);
-        if (shape.kind === 'full') place('cliff_full_0', 0);
-        else if (shape.kind === 'single') place(variant('cliff_convex', 2), shape.k);
-        else if (shape.kind === 'pair') place(variant('cliff_half', 3), shape.k);
+        if (shape.kind === 'full') place(`${kind}_full_0`, 0, y);
+        else if (shape.kind === 'single') place(variant(`${kind}_convex`, 2), shape.k, y);
+        else if (shape.kind === 'pair') place(variant(`${kind}_half`, 3), shape.k, y);
         else if (shape.kind === 'diagonal') {
-          for (let k = 0; k < 4; k++) if (high & (1 << k)) place(variant('cliff_convex', 2), k);
-        } else place(variant('cliff_concave', 2), shape.k - 2);
+          for (let k = 0; k < 4; k++) if (high & (1 << k)) place(variant(`${kind}_convex`, 2), k, y);
+        } else place(variant(`${kind}_concave`, 2), shape.k - 2, y);
       }
       return out;
     },

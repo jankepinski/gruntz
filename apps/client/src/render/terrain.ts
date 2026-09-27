@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { tileDef, type ThemeId, type TileVisual, type World } from '@gruntz/core';
-import { createTileKit, type TileKit, type PieceKey } from './tileKit.ts';
+import { CLIFF_TOP, createTileKit, type TileKit, type PieceKey } from './tileKit.ts';
+import { isWall, renderLevels } from './elevation.ts';
 import type { TerrainOptions } from './graphics.ts';
 
 /** Tiles of decorative high ground around the playable map. */
@@ -131,6 +132,9 @@ export class TerrainView {
   private width = 0;
   private height = 0;
   private tiles: number[] = [];
+  /** Top level of every tile as drawn (see renderLevels). Heights never change in a game. */
+  private levels: number[] = [];
+  private heights: number[] = [];
   private time = 0;
   private liquidMask: THREE.DataTexture | null = null;
   /** Tiles covered by map objects: they get no grass or clutter. */
@@ -145,6 +149,8 @@ export class TerrainView {
     this.width = w.width;
     this.height = w.height;
     this.tiles = w.tiles.slice();
+    this.heights = w.heights.slice();
+    this.levels = renderLevels(w.width, w.height, w.tiles, w.heights);
     this.placed = new Array(w.width * w.height).fill(null).map(() => []);
     this.bare.clear();
     for (const e of w.entities.values()) {
@@ -254,8 +260,12 @@ export class TerrainView {
         // Full detail near the map, thinning out towards the horizon.
         const gap = Math.max(-x - 1, x - this.width, -y - 1, y - this.height, 0);
         const detail = gap < 4 ? 1 : gap < 8 ? 0.45 : 0;
-        for (const p of this.kit.surroundingPieces(x, y, (dx, dy) => this.visual(x + dx, y + dy), detail))
-          for (const batch of this.batchKeys(p.key, p.matrix)) this.batches.get(batch)!.add(p.matrix, p.color);
+        // The land around the map continues at the height of its edge.
+        const lift = new THREE.Matrix4().makeTranslation(0, (this.level(x, y) - 1) * CLIFF_TOP, 0);
+        for (const p of this.kit.surroundingPieces(x, y, (dx, dy) => this.visual(x + dx, y + dy), detail)) {
+          const matrix = lift.clone().multiply(p.matrix);
+          for (const batch of this.batchKeys(p.key, matrix)) this.batches.get(batch)!.add(matrix, p.color);
+        }
       }
     }
   }
@@ -268,12 +278,17 @@ export class TerrainView {
   private placeCell(cx: number, cy: number): void {
     const i = this.cellIndex(cx, cy);
     for (const p of this.cells.get(i) ?? []) for (const s of p.slots) this.batches.get(s.batch)!.remove(s.slot);
-    const corners = [
-      this.visual(cx, cy - 1),
-      this.visual(cx - 1, cy - 1),
-      this.visual(cx - 1, cy),
-      this.visual(cx, cy),
-    ];
+    const corners = (
+      [
+        [cx, cy - 1],
+        [cx - 1, cy - 1],
+        [cx - 1, cy],
+        [cx, cy],
+      ] as const
+    ).map(([x, y]) => {
+      const v = this.visual(x, y);
+      return { v, level: this.level(x, y), wall: !v || v.kind === 'cliff' };
+    });
     const placed: PlacedPiece[] = [];
     for (const p of this.kit.cellPieces(cx, cy, corners)) {
       const slots = this.batchKeys(p.key, p.matrix).map(batch => ({
@@ -308,25 +323,44 @@ export class TerrainView {
     return tileDef(this.tiles[y * this.width + x]!).visual;
   }
 
+  /**
+   * Top level of a tile as drawn. Outside the map: the land around it, as high as the wall at
+   * the map's edge or one level above the ground there.
+   */
+  private level(x: number, y: number): number {
+    const cx = Math.min(this.width - 1, Math.max(0, x));
+    const cy = Math.min(this.height - 1, Math.max(0, y));
+    const i = cy * this.width + cx;
+    const edge = this.levels[i] ?? 0;
+    if (cx === x && cy === y) return edge;
+    return Math.max(1, isWall(this.tiles[i]!) ? edge : edge + 1);
+  }
+
   private placeTile(x: number, y: number): void {
     const i = y * this.width + x;
     for (const p of this.placed[i]!) for (const s of p.slots) this.batches.get(s.batch)!.remove(s.slot);
+    const v = this.visual(x, y)!;
+    const own = this.levels[i]!;
     const pieces = this.kit.tilePieces(
       x,
       y,
-      this.visual(x, y)!,
+      v,
       (dx, dy) => this.visual(x + dx, y + dy),
       this.bare.has(i),
+      (dx, dy) => this.level(x + dx, y + dy),
     );
+    // Pieces are made for the ground; lift them to the tile's level (a wall's pieces sit on its top).
+    const lift = new THREE.Matrix4().makeTranslation(0, (v.kind === 'cliff' ? own - 1 : own) * CLIFF_TOP, 0);
     const placed: PlacedPiece[] = [];
     const m = new THREE.Matrix4();
     for (const p of pieces) {
-      const matrix = p.lift !== undefined ? m.copy(p.matrix).multiply(this.kit.liftTransform(p.key, p.lift)) : p.matrix;
-      const slots = this.batchKeys(p.key, p.matrix).map(batch => ({
+      const base = own > 0 ? lift.clone().multiply(p.matrix) : p.matrix;
+      const matrix = p.lift !== undefined ? m.copy(base).multiply(this.kit.liftTransform(p.key, p.lift)) : base;
+      const slots = this.batchKeys(p.key, base).map(batch => ({
         batch,
         slot: this.batches.get(batch)!.add(matrix, p.color),
       }));
-      const entry: PlacedPiece = { key: p.key, slots, base: p.matrix.clone() };
+      const entry: PlacedPiece = { key: p.key, slots, base: base.clone() };
       if (p.lift !== undefined) entry.lift = p.lift;
       placed.push(entry);
     }
@@ -337,34 +371,33 @@ export class TerrainView {
   updateTiles(changes: [number, number][]): void {
     const dirty = new Set<number>();
     const previous = new Map<number, number | undefined>();
+    let walls = false;
     for (const [i, tile] of changes) {
       const before = this.tiles[i];
       previous.set(i, before);
       this.tiles[i] = tile;
-      const x = i % this.width;
-      const y = Math.floor(i / this.width);
-      for (let dy = -1; dy <= 1; dy++)
-        for (let dx = -1; dx <= 1; dx++) {
-          const nx = x + dx;
-          const ny = y + dy;
-          if (nx >= 0 && ny >= 0 && nx < this.width && ny < this.height) dirty.add(ny * this.width + nx);
-        }
+      if (before !== undefined && isWall(before) !== isWall(tile)) walls = true;
       if (before !== undefined) this.animateChange(i, before, tile);
     }
-    for (const i of dirty) this.placeTile(i % this.width, Math.floor(i / this.width));
-    // Every changed tile touches the four dual-grid cells on its corners.
+    // A wall appearing or disappearing (only in the editor) changes how high the walls next
+    // to it are drawn, so the neighbourhood is rebuilt a bit wider.
+    const reach = walls ? 2 : 1;
+    if (walls) this.levels = renderLevels(this.width, this.height, this.tiles, this.heights);
     const cells = new Set<string>();
     for (const [i] of changes) {
       const x = i % this.width;
       const y = Math.floor(i / this.width);
-      for (const [cx, cy] of [
-        [x, y],
-        [x + 1, y],
-        [x, y + 1],
-        [x + 1, y + 1],
-      ] as const)
-        cells.add(`${cx},${cy}`);
+      for (let dy = -reach; dy <= reach; dy++)
+        for (let dx = -reach; dx <= reach; dx++) {
+          const nx = x + dx;
+          const ny = y + dy;
+          if (nx >= 0 && ny >= 0 && nx < this.width && ny < this.height) dirty.add(ny * this.width + nx);
+        }
+      // Every changed tile touches the dual-grid cells on its corners (and wider for walls).
+      for (let cy = y - reach + 1; cy <= y + reach; cy++)
+        for (let cx = x - reach + 1; cx <= x + reach; cx++) cells.add(`${cx},${cy}`);
     }
+    for (const i of dirty) this.placeTile(i % this.width, Math.floor(i / this.width));
     for (const c of cells) {
       const [cx, cy] = c.split(',').map(Number) as [number, number];
       this.placeCell(cx, cy);
