@@ -1,9 +1,11 @@
 import {
   blankLevel,
   buildLevel,
+  floodHeights,
   floodRegion,
   gridSize,
   levelToGrid,
+  levelToHeights,
   mirrorLevel,
   resizeLevel,
   tileByName,
@@ -11,18 +13,27 @@ import {
   validateLevel,
   type LevelData,
   type LevelIssue,
+  type HeightGrid,
   type LevelObject,
   type Point,
   type TileGrid,
 } from '@gruntz/core';
 import { Store } from '../game/store.ts';
 
-export type LevelMeta = Omit<LevelData, 'tiles' | 'legend' | 'objects'>;
+export type LevelMeta = Omit<LevelData, 'tiles' | 'legend' | 'objects' | 'heights'>;
 
 export interface EditorDoc {
   meta: LevelMeta;
   grid: TileGrid;
+  heights: HeightGrid;
   objects: LevelObject[];
+}
+
+/** Palette entries that paint a height level instead of a tile. */
+export const LEVEL_BRUSH = 'LEVEL_';
+
+export function levelBrush(name: string): number | null {
+  return name.startsWith(LEVEL_BRUSH) ? Number(name.slice(LEVEL_BRUSH.length)) : null;
 }
 
 export type EditorTool = 'select' | 'paint' | 'rect' | 'fill' | 'object' | 'link';
@@ -70,6 +81,8 @@ export class EditorModel {
   camera: { x: number; y: number; zoom: number; rotation: number } | null = null;
 
   onTiles: Listener<[Point[]]> | null = null;
+  /** Height levels changed (the terrain has to be rebuilt). */
+  onHeights: Listener<[]> | null = null;
   onObjects: Listener<[]> | null = null;
   onReload: Listener<[]> | null = null;
 
@@ -102,7 +115,7 @@ export class EditorModel {
   }
 
   level(): LevelData {
-    return buildLevel(this.doc.meta, this.doc.grid, this.doc.objects);
+    return buildLevel(this.doc.meta, this.doc.grid, this.doc.objects, this.doc.heights);
   }
 
   load(level: LevelData): void {
@@ -150,6 +163,7 @@ export class EditorModel {
       for (let y = 0; y < this.height; y++)
         for (let x = 0; x < this.width; x++) if (doc.grid[y]![x] !== this.doc.grid[y]![x]) changedTiles.push({ x, y });
     }
+    const heightsChanged = JSON.stringify(doc.heights) !== JSON.stringify(this.doc.heights);
     this.doc = doc;
     const selected = this.state.get().selected;
     if (selected !== null && selected >= doc.objects.length) this.state.set({ selected: null });
@@ -157,6 +171,7 @@ export class EditorModel {
       this.changed('reload');
     } else {
       if (changedTiles.length) this.onTiles?.(changedTiles);
+      if (heightsChanged) this.onHeights?.();
       this.changed('objects');
     }
   }
@@ -167,8 +182,31 @@ export class EditorModel {
     return this.doc.grid[y]?.[x];
   }
 
-  /** Paint tiles; keeps switch objects in sync with switch tiles. */
+  heightAt(x: number, y: number): number {
+    return this.doc.heights[y]?.[x] ?? 0;
+  }
+
+  /** Raise or lower ground to a height level. */
+  setHeights(points: Point[], level: number): void {
+    let changed = false;
+    for (const p of points) {
+      const row = this.doc.heights[p.y];
+      if (!row || p.x < 0 || p.x >= row.length || row[p.x] === level) continue;
+      row[p.x] = level;
+      changed = true;
+    }
+    if (!changed) return;
+    this.onHeights?.();
+    this.changed('tiles');
+  }
+
+  /** Paint tiles (or height levels); keeps switch objects in sync with switch tiles. */
   setTiles(points: Point[], name: string): void {
+    const level = levelBrush(name);
+    if (level !== null) {
+      this.setHeights(points, level);
+      return;
+    }
     const changed: Point[] = [];
     let objectsChanged = false;
     for (const p of points) {
@@ -200,7 +238,9 @@ export class EditorModel {
   }
 
   fill(start: Point, name: string): void {
-    this.setTiles(floodRegion(this.doc.grid, start), name);
+    const level = levelBrush(name);
+    if (level !== null) this.setHeights(floodHeights(this.doc.heights, start), level);
+    else this.setTiles(floodRegion(this.doc.grid, start), name);
   }
 
   /** Switch tiles carry a switch object with their links; create / drop it with the tile. */
@@ -446,16 +486,27 @@ export class EditorModel {
   }
 
   resize(width: number, height: number, ox: number, oy: number): void {
-    const { grid, objects } = resizeLevel(this.doc.grid, this.doc.objects, width, height, ox, oy, 'GROUND');
+    const { grid, objects, heights } = resizeLevel(
+      this.doc.grid,
+      this.doc.objects,
+      width,
+      height,
+      ox,
+      oy,
+      'GROUND',
+      this.doc.heights,
+    );
     this.doc.grid = grid;
+    this.doc.heights = heights;
     this.doc.objects = objects;
     this.state.set({ selected: null });
     this.changed('reload');
   }
 
   mirror(axis: 'x' | 'y'): void {
-    const { grid, objects } = mirrorLevel(this.doc.grid, this.doc.objects, axis);
+    const { grid, objects, heights } = mirrorLevel(this.doc.grid, this.doc.objects, axis, this.doc.heights);
     this.doc.grid = grid;
+    this.doc.heights = heights;
     this.doc.objects = objects;
     this.changed('reload');
   }
@@ -490,8 +541,8 @@ export class EditorModel {
 }
 
 function docFromLevel(level: LevelData): EditorDoc {
-  const { tiles: _tiles, legend: _legend, objects, ...meta } = structuredClone(level);
-  return { meta, grid: levelToGrid(level), objects };
+  const { tiles: _tiles, legend: _legend, heights: _heights, objects, ...meta } = structuredClone(level);
+  return { meta, grid: levelToGrid(level), heights: levelToHeights(level), objects };
 }
 
 function cloneDoc(doc: EditorDoc): EditorDoc {

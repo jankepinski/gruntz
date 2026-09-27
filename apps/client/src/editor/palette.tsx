@@ -7,6 +7,7 @@ import {
   Asterisk,
   ChevronsDown,
   Droplets,
+  Footprints,
   Flag,
   Gem,
   Hand,
@@ -57,6 +58,8 @@ const KIND_ICON: Record<string, () => JSX.Element> = {
 export function tileBadges(name: string): { main: Badge | null; extra: JSX.Element[] } {
   const d = TILE_DEFS.find(x => x.name === name);
   const extra: JSX.Element[] = [];
+  if (name.startsWith('LEVEL_'))
+    return { main: { bg: '#ece4d4', fg: '#16181c', icon: <b class="badge-digit">{name.slice(6)}</b> }, extra };
   if (!d) return { main: null, extra };
   const v = d.visual;
   switch (v.kind) {
@@ -86,6 +89,20 @@ export function tileBadges(name: string): { main: Badge | null; extra: JSX.Eleme
       if (v.auto) extra.push(<RefreshCw size={12} strokeWidth={2.4} />);
       if (v.over === 'death') extra.push(<Skull size={12} strokeWidth={2.4} />);
       return { main: null, extra };
+    case 'ramp':
+      extra.push(<Footprints size={12} strokeWidth={2.4} />);
+      return {
+        main: {
+          bg: '#c89a64',
+          fg: '#16181c',
+          icon: (
+            <span style={{ display: 'inline-flex', transform: `rotate(${v.dir * 45}deg)` }}>
+              <ArrowUp size={13} strokeWidth={2.8} />
+            </span>
+          ),
+        },
+        extra,
+      };
     default:
       return { main: null, extra };
   }
@@ -139,7 +156,8 @@ export function ObjectThumb({
   return <img class="thumb" src={url} width={size} height={size} alt="" draggable={false} />;
 }
 
-export type TileGroupId = 'terrain' | 'water' | 'hazard' | 'bridge' | 'arrow' | 'switch' | 'pressed' | 'pyramid';
+export type TileGroupId =
+  'terrain' | 'height' | 'water' | 'hazard' | 'bridge' | 'arrow' | 'switch' | 'pressed' | 'pyramid';
 
 function groupOf(d: TileDef): TileGroupId | null {
   switch (d.visual.kind) {
@@ -166,6 +184,8 @@ function groupOf(d: TileDef): TileGroupId | null {
       return d.visual.pressed ? 'pressed' : 'switch';
     case 'pyramid':
       return 'pyramid';
+    case 'ramp':
+      return 'height';
     case 'brickz':
     case 'giantRock':
       return null;
@@ -173,8 +193,20 @@ function groupOf(d: TileDef): TileGroupId | null {
 }
 
 export const TILE_GROUPS: { id: TileGroupId; tiles: string[] }[] = (() => {
-  const order: TileGroupId[] = ['terrain', 'water', 'hazard', 'bridge', 'arrow', 'switch', 'pressed', 'pyramid'];
+  const order: TileGroupId[] = [
+    'terrain',
+    'height',
+    'water',
+    'hazard',
+    'bridge',
+    'arrow',
+    'switch',
+    'pressed',
+    'pyramid',
+  ];
   const groups = new Map<TileGroupId, string[]>(order.map(g => [g, []]));
+  // Height brushes paint a level instead of a tile (see LEVEL_BRUSH in the editor model).
+  groups.get('height')!.push('LEVEL_0', 'LEVEL_1', 'LEVEL_2', 'LEVEL_3');
   for (const d of TILE_DEFS) {
     const g = groupOf(d);
     if (g) groups.get(g)!.push(d.name);
@@ -201,6 +233,22 @@ const ARROW_GLYPH = ['↑', '↗', '→', '↘', '↓', '↙', '←', '↖'];
 
 /** Small CSS swatch that reads as the tile at a glance. */
 export function TileSwatch({ name, size = 30 }: { name: string; size?: number }) {
+  if (name.startsWith('LEVEL_')) {
+    const n = Number(name.slice(6));
+    return (
+      <span
+        class="tile-swatch"
+        style={{
+          width: size,
+          height: size,
+          background: `linear-gradient(0deg, #8a6a48 0 ${n * 22}%, #8fbf5a ${n * 22}%)`,
+          color: '#fff',
+        }}
+      >
+        <span class="tile-swatch-glyph">{n}</span>
+      </span>
+    );
+  }
   const d = TILE_DEFS.find(x => x.name === name)!;
   const v = d.visual;
   let bg = '#8fbf5a';
@@ -281,6 +329,10 @@ export function TileSwatch({ name, size = 30 }: { name: string; size?: number })
     case 'giantRock':
       bg = '#8a7c6c';
       break;
+    case 'ramp':
+      bg = 'repeating-linear-gradient(0deg, #c89a64 0 5px, #8a6a48 5px 7px)';
+      glyph = ARROW_GLYPH[v.dir]!;
+      break;
   }
   return (
     <span class="tile-swatch" style={{ width: size, height: size, background: bg, color: fg }}>
@@ -327,6 +379,8 @@ const WORDS: Record<string, { en: string; pl: string }> = {
   SECRET: { en: 'secret', pl: 'sekretny' },
   HOLD: { en: 'hold', pl: 'przytrzymywany' },
   PYRAMID: { en: 'Pyramid', pl: 'Piramida' },
+  RAMP: { en: 'Stairz', pl: 'Schody' },
+  LEVEL: { en: 'Height', pl: 'Wysokość' },
   GREEN: { en: 'green', pl: 'zielona' },
   RED: { en: 'red', pl: 'czerwona' },
   GEM: { en: 'gem', pl: 'klejnot' },
@@ -341,6 +395,10 @@ export function tileLabel(name: string): string {
     const p = parts[i]!;
     if (p === 'W' && parts[0] === 'SWITCH') {
       out.push(l === 'pl' ? 'biały' : 'white');
+      continue;
+    }
+    if (parts[0] === 'RAMP' && i === 1) {
+      out.push(l === 'pl' ? `w górę na ${WORDS[p]?.pl ?? p}` : `up ${WORDS[p]?.en ?? p}`);
       continue;
     }
     if (p === 'LO' && parts[0] === 'SWITCH') {

@@ -1,12 +1,12 @@
 import * as THREE from 'three';
 import { createWorld, T, tileByName, tileId, type LevelData, type Point, type World } from '@gruntz/core';
 import { GameRenderer } from '../render/renderer.ts';
+import { LEVEL_H, renderLevels, tileY } from '../render/elevation.ts';
 import { models } from '../render/models.ts';
 import { settings } from '../game/store.ts';
 import type { EditorModel } from './model.ts';
 
 const OVERLAY_Y = 0.06;
-const HILL_Y = 1.1;
 
 /**
  * 3D view of the level being edited. The level is rendered with the game renderer (no
@@ -31,6 +31,9 @@ export class EditorView {
   /** Renders when requestAnimationFrame is paused (hidden or embedded panes). */
   private fallbackTimer = 0;
   private lastFrameAt = performance.now();
+  /** Top level of every tile as drawn (walls stand above what they border). */
+  private levels: number[] = [];
+  private heightsTimer = 0;
 
   constructor(
     readonly canvas: HTMLCanvasElement,
@@ -88,6 +91,14 @@ export class EditorView {
     this.disposers.push(() => canvas.removeEventListener('wheel', wheel));
 
     model.onTiles = points => this.updateTiles(points);
+    // Heights reshape the whole terrain: rebuild it, at most a few times a second while painting.
+    model.onHeights = () => {
+      if (this.heightsTimer) return;
+      this.heightsTimer = window.setTimeout(() => {
+        this.heightsTimer = 0;
+        void this.reload();
+      }, 120);
+    };
     model.onObjects = () => this.rebuildObjects();
     model.onReload = () => void this.reload();
     this.raf = requestAnimationFrame(this.frame);
@@ -104,6 +115,7 @@ export class EditorView {
       if (!world) return;
       const first = !this.world;
       this.world = world;
+      this.levels = renderLevels(world.width, world.height, world.tiles, world.heights);
       this.renderer.load(world);
       // Editing wants the whole map in view: farther zoom, no distance fog.
       this.renderer.rig.maxZoom = 1.4;
@@ -178,7 +190,10 @@ export class EditorView {
       changes.push([i, id]);
     }
     w.takeChanges();
-    if (changes.length) this.renderer.terrain?.updateTiles(changes);
+    if (changes.length) {
+      this.levels = renderLevels(w.width, w.height, w.tiles, w.heights);
+      this.renderer.terrain?.updateTiles(changes);
+    }
   }
 
   private buildGrid(): void {
@@ -188,8 +203,19 @@ export class EditorView {
       this.overlay.remove(this.grid);
     }
     const pts: number[] = [];
-    for (let x = 0; x <= w.width; x++) pts.push(x, OVERLAY_Y - 0.03, 0, x, OVERLAY_Y - 0.03, w.height);
-    for (let y = 0; y <= w.height; y++) pts.push(0, OVERLAY_Y - 0.03, y, w.width, OVERLAY_Y - 0.03, y);
+    if (w.maxLevel === 0) {
+      for (let x = 0; x <= w.width; x++) pts.push(x, OVERLAY_Y - 0.03, 0, x, OVERLAY_Y - 0.03, w.height);
+      for (let y = 0; y <= w.height; y++) pts.push(0, OVERLAY_Y - 0.03, y, w.width, OVERLAY_Y - 0.03, y);
+    } else {
+      // On a map with high ground every tile outlines itself on its own level.
+      for (let y = 0; y < w.height; y++)
+        for (let x = 0; x < w.width; x++) {
+          const h = w.level(x, y) * LEVEL_H + OVERLAY_Y - 0.03;
+          pts.push(x, h, y, x + 1, h, y, x, h, y, x, h, y + 1);
+          if (x === w.width - 1) pts.push(x + 1, h, y, x + 1, h, y + 1);
+          if (y === w.height - 1) pts.push(x, h, y + 1, x + 1, h, y + 1);
+        }
+    }
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
     this.grid = new THREE.LineSegments(
@@ -238,8 +264,12 @@ export class EditorView {
   }
 
   private heightAt(x: number, y: number): number {
+    const w = this.world;
+    if (!w || !w.inBounds(x, y)) return OVERLAY_Y;
     const name = this.model.tileAt(x, y);
-    return name && tileByName(name).traits & T.HILL ? HILL_Y : OVERLAY_Y;
+    // Walls: their top. Everything else: the ground (stairz included).
+    if (name && tileByName(name).traits & T.HILL) return (this.levels[w.index(x, y)] ?? 1) * LEVEL_H + 0.04;
+    return tileY(w, x, y) + OVERLAY_Y;
   }
 
   private placeBox(line: THREE.LineLoop, a: Point, b: Point, lift = 0): void {
@@ -247,7 +277,8 @@ export class EditorView {
     const y0 = Math.min(a.y, b.y);
     const x1 = Math.max(a.x, b.x) + 1;
     const y1 = Math.max(a.y, b.y) + 1;
-    const h = a.x === b.x && a.y === b.y ? this.heightAt(a.x, a.y) : OVERLAY_Y;
+    const h =
+      a.x === b.x && a.y === b.y ? this.heightAt(a.x, a.y) : Math.max(this.heightAt(a.x, a.y), this.heightAt(b.x, b.y));
     line.position.set(x0, h + lift, y0);
     line.scale.set(x1 - x0, 1, y1 - y0);
     line.visible = true;
@@ -396,6 +427,8 @@ export class EditorView {
     clearInterval(this.fallbackTimer);
     for (const d of this.disposers) d();
     this.model.onTiles = null;
+    this.model.onHeights = null;
+    window.clearTimeout(this.heightsTimer);
     this.model.onObjects = null;
     this.model.onReload = null;
     this.renderer.dispose();

@@ -609,7 +609,12 @@ function Workspace({ model, back, onTest }: { model: EditorModel; back: () => vo
 
       {s.hover && hoverTile && (
         <div class={`ed-status ${dockOpen ? '' : 'low'}`}>
-          {t('editor.tileInfo', { x: s.hover.x, y: s.hover.y, tile: tileLabel(hoverTile) })}
+          {t('editor.tileInfo', {
+            x: s.hover.x,
+            y: s.hover.y,
+            tile: tileLabel(hoverTile),
+            level: model.heightAt(s.hover.x, s.hover.y),
+          })}
         </div>
       )}
       {s.tool === 'link' && <LinkHint model={model} selected={s.selected} />}

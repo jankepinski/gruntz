@@ -281,7 +281,7 @@ export const en = {
     mirrorY: 'Mirror ↕',
     inspector: 'Properties',
     nothingSelected: 'Click an object to edit it. Right click deletes.',
-    tileInfo: 'Tile {x},{y}: {tile}',
+    tileInfo: 'Tile {x},{y}: {tile} · height {level}',
     delete: 'Delete object',
     team: 'Team',
     player: 'Player',
@@ -358,6 +358,7 @@ export const en = {
     },
     tileGroups: {
       terrain: 'Terrain',
+      height: 'Heights & stairz',
       water: 'Water & abyss',
       hazard: 'Hazards',
       arrow: 'Arrows',
@@ -387,6 +388,10 @@ export const en = {
       triggerNoWormhole: 'Secret trigger isn’t linked to a wormhole.',
       padNotWalkable: 'Creation pad on a blocked tile.',
       ballOnWall: 'Rolling ball inside a wall.',
+      liquidHigh: 'Water, abysses and bridges can only be on the ground level.',
+      rampTop: 'Stairz must lead up to walkable ground one level higher.',
+      rampBottom: 'Stairz must start on walkable ground of their own level.',
+      arrowOffEdge: 'Arrow points over a cliff edge.',
       teamOutOfRange: 'Object for a player slot the map doesn’t have.',
     },
     themes: {
