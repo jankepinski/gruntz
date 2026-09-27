@@ -8,11 +8,11 @@ import { BRICK_COLORS, TEAM_COLORS } from '../render/placeholders.ts';
 import { themeColors } from '../render/tileKit.ts';
 import { ItemImg, useThumbnails } from './icons.tsx';
 import { thumbnails } from '../render/thumbnails.ts';
-import { FastForward, Flame, Navigation2, Pause, Play, Radiation, X } from 'lucide-preact';
+import { FastForward, Flame, Navigation2, Pause, Play, Radiation, Settings as Cog, X } from 'lucide-preact';
 
 const hex = (n: number) => `#${n.toString(16).padStart(6, '0')}`;
 
-export function Hud({ client }: { client: GameClient }) {
+export function Hud({ client, onSettings }: { client: GameClient; onSettings?: () => void }) {
   const ui = useStore(client.ui);
   const w = client.world;
   if (!w || ui.status === 'loading') return <div class="loading">…</div>;
@@ -21,7 +21,7 @@ export function Hud({ client }: { client: GameClient }) {
   return (
     <>
       {team && <TeamPanel client={client} team={team} world={w} />}
-      <TopRight client={client} />
+      <TopRight client={client} onSettings={onSettings} />
       {selected.length > 0 && <SelectionPanel client={client} gruntz={selected} />}
       <ModeHint client={client} />
       <FloatingTexts client={client} />
@@ -125,7 +125,7 @@ function ItemIcon({ item }: { item: string }) {
   return <ItemImg item={item} size={32} />;
 }
 
-function TopRight({ client }: { client: GameClient }) {
+function TopRight({ client, onSettings }: { client: GameClient; onSettings?: (() => void) | undefined }) {
   const ui = client.ui.get();
   return (
     <div class="hud-panel top-right">
@@ -148,6 +148,11 @@ function TopRight({ client }: { client: GameClient }) {
           </>
         ) : (
           <span class="ping">{ui.ping} ms</span>
+        )}
+        {onSettings && (
+          <button class="icon-btn" onClick={onSettings} title={t('hud.settings')}>
+            <Cog size={16} strokeWidth={2.2} />
+          </button>
         )}
       </div>
     </div>

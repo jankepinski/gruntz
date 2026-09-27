@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import type { SwitchKind, PyramidKind, ThemeId, TileVisual } from '@gruntz/core';
 import { applyClay, bedMaterial, chasmMaterial, clayMaterial, createLiquidMask, grassMaterial, groundMaterial, lavaMaterial, waterMaterial, type GroundPattern, type LiquidMask } from './materials.ts';
+import type { TerrainOptions } from './graphics.ts';
 import { models } from './models.ts';
 
 export type PieceKey = string;
@@ -516,15 +517,16 @@ const HOUSE_GRID = 7;
  * The 2x2 block of high ground a landmark occupies, if tile (x, y) is part of one. Every
  * candidate needs a margin of high ground around it so it never hangs over a cliff edge.
  */
-function houseBlock(x: number, y: number, high: (tx: number, ty: number) => boolean, chance: number): { ax: number; ay: number } | null {
+function houseBlock(x: number, y: number, high: (tx: number, ty: number) => boolean, chance: number): { ax: number; ay: number; yard: boolean } | null {
   const cx = Math.floor(x / HOUSE_GRID);
   const cy = Math.floor(y / HOUSE_GRID);
   if (hash2(cx * 17 + 5, cy * 23 + 11) > chance) return null;
   const ax = cx * HOUSE_GRID + 1 + Math.floor(hash2(cx * 7 + 3, cy * 13 + 1) * (HOUSE_GRID - 3));
   const ay = cy * HOUSE_GRID + 1 + Math.floor(hash2(cx * 11 + 9, cy * 5 + 7) * (HOUSE_GRID - 3));
-  if (x < ax || y < ay || x > ax + 1 || y > ay + 1) return null;
+  // the 2x2 block itself plus a one-tile yard around it (kept clear of trees)
+  if (x < ax - 1 || y < ay - 1 || x > ax + 2 || y > ay + 2) return null;
   for (let ty = ay - 1; ty <= ay + 2; ty++) for (let tx = ax - 1; tx <= ax + 2; tx++) if (!high(tx, ty)) return null;
-  return { ax, ay };
+  return { ax, ay, yard: x < ax || y < ay || x > ax + 1 || y > ay + 1 };
 }
 
 /** Height of the cliff tops (matches the Blender kit). */
@@ -555,9 +557,12 @@ function maskShape(mask: number): { kind: 'single' | 'pair' | 'diagonal' | 'trip
   return { kind: 'full', k: 0 };
 }
 
-export function createTileKit(theme: ThemeId): TileKit {
+export function createTileKit(theme: ThemeId, options: TerrainOptions = { grass: 'tufts', scenery: 'full' }): TileKit {
   const pal = PALETTES[theme];
   const decor = DECOR[theme];
+  /** How grass grows here (only grassy worlds have any). */
+  const grassMode = decor.grass ? options.grass : 'off';
+  const reduced = options.scenery === 'reduced';
   const pieces = new Map<PieceKey, PieceDef>();
   const disposables: { dispose(): void }[] = [];
   const mask: LiquidMask = createLiquidMask();
@@ -577,18 +582,22 @@ export function createTileKit(theme: ThemeId): TileKit {
   // Ground slab (top at y=0). Plain box so neighbouring slabs join seamlessly.
   const ground = new THREE.BoxGeometry(1, 0.4, 1);
   ground.translate(0, -0.2, 0);
-  const groundMat = groundMaterial(pal.ground[0]!, pal.groundAlt, pal.dirt, decor.pattern);
+  // Velvet grass is drawn by the ground shader itself (one pass, see groundMaterial).
+  const velvetOn = grassMode === 'velvet';
+  const groundMat = groundMaterial(pal.ground[0]!, pal.groundAlt, pal.dirt, decor.pattern, velvetOn);
   disposables.push(groundMat);
   def('ground', ground, groundMat, false, true);
   const grass = grassMaterial(pal.ground[0]!, pal.groundAlt, pal.dirt);
   disposables.push(grass);
-  for (let i = 0; i < 4; i++) def(`grass${i}`, grassTuft(i + 1, 6, decor.grassHeight ?? 0.16), grass, false, true);
+  const tuftShadows = grassMode === 'tuftsShadow';
+  for (let i = 0; i < 4; i++) def(`grass${i}`, grassTuft(i + 1, 6, decor.grassHeight ?? 0.16), grass, tuftShadows, true);
   // The tops of cliffs are ground too: same patterned surface and grass, in the top colour.
   const topB = new THREE.Color(pal.cliffTop).offsetHSL(0.02, 0.04, 0.05).getHex();
-  const topMat = groundMaterial(pal.cliffTop, topB, pal.dirt, decor.pattern);
+  const topMat = groundMaterial(pal.cliffTop, topB, pal.dirt, decor.pattern, velvetOn);
   const grassTop = grassMaterial(pal.cliffTop, topB, pal.dirt);
   disposables.push(topMat, grassTop);
-  for (let i = 0; i < 4; i++) def(`grassTop${i}`, grassTuft(i + 11, 6, decor.grassHeight ?? 0.16), grassTop, false, true);
+  for (let i = 0; i < 4; i++) def(`grassTop${i}`, grassTuft(i + 11, 6, decor.grassHeight ?? 0.16), grassTop, tuftShadows, true);
+
   const surface = new THREE.PlaneGeometry(1, 1, 6, 6);
   surface.rotateX(-Math.PI / 2);
   surface.translate(0, WATER_LEVEL, 0);
@@ -753,9 +762,14 @@ export function createTileKit(theme: ThemeId): TileKit {
    */
   const scatterHigh = (x: number, y: number, at_: (tx: number, ty: number) => TileVisual | undefined, density: number, houses: number, detail = 1): PlacedPieceDef[] => {
     const out: PlacedPieceDef[] = [];
+    if (reduced) {
+      // Lighter scenery: fewer props, nothing small far from the map.
+      density *= 0.6;
+      if (detail < 1) detail = 0;
+    }
     // Grass on top (grassy worlds), thinning out far away.
     // (not under a jungle's undergrowth, which covers the ground anyway)
-    const lawn = detail >= 1 && !decor.undergrowth ? Math.round((decor.grass ?? 0) * 0.6) : detail >= 1 && decor.grass ? 1 : 0;
+    const lawn = grassMode === 'off' || grassMode === 'velvet' ? 0 : detail >= 1 && !decor.undergrowth ? Math.round((decor.grass ?? 0) * 0.6) : detail >= 1 && decor.grass ? 1 : 0;
     for (let i = 0; i < lawn; i++) {
       const gx = hash2(x * 31 + i * 7, y * 17 + i * 3) - 0.5;
       const gz = hash2(x * 13 + i * 5, y * 29 + i * 11) - 0.5;
@@ -789,6 +803,12 @@ export function createTileKit(theme: ThemeId): TileKit {
 
     if (decor.big.length && houses > 0) {
       const block = houseBlock(x, y, high, houses);
+      if (block?.yard) {
+        // Around a house only low things grow, so nothing pokes through its roof.
+        const q = hash2(x * 37 + 3, y * 41 + 9);
+        if (q < 0.3) put(decor.bush, 0.9);
+        return out;
+      }
       if (block) {
         if (block.ax === x && block.ay === y) {
           const key = pick(decor.big, 5);
@@ -813,7 +833,8 @@ export function createTileKit(theme: ThemeId): TileKit {
     }
     // Small things fill the gaps.
     const q = hash2(x * 37 + 3, y * 41 + 9);
-    if (decor.undergrowth && decor.underPlants && q < decor.undergrowth * (0.5 + 0.6 * groves(x, y))) {
+    if (reduced && detail === 0) return out;
+    if (decor.undergrowth && decor.underPlants && q < decor.undergrowth * (reduced ? 0.4 : 1) * (0.5 + 0.6 * groves(x, y)) && (detail > 0 || !reduced)) {
       put(pick(decor.underPlants, 4), 1.1 + hash2(x * 83, y * 89) * 0.5);
       return out;
     }
@@ -859,8 +880,10 @@ export function createTileKit(theme: ThemeId): TileKit {
         else if (r < 0.27) place(decor.pebbles, undefined, 1.5);
       };
       const lawn = () => {
-        // Dense little grass clumps all over the tile (grassy worlds only).
-        const count = bare ? 0 : (decor.grass ?? 0);
+        // (velvet grass grows in the ground shader, no pieces needed)
+        if (bare || grassMode === 'off' || grassMode === 'velvet') return;
+        // Chunky clay tufts dotted over the tile.
+        const count = decor.grass ?? 0;
         for (let i = 0; i < count; i++) {
           const gx = hash2(x * 31 + i * 7, y * 17 + i * 3) - 0.5;
           const gz = hash2(x * 13 + i * 5, y * 29 + i * 11) - 0.5;
@@ -1045,6 +1068,8 @@ export function createTileKit(theme: ThemeId): TileKit {
       bed.userData.time.value = time;
       grass.userData.time.value = time;
       grassTop.userData.time.value = time;
+      groundMat.userData.time.value = time;
+      topMat.userData.time.value = time;
       if (liquid) liquid.userData.time.value = time;
     },
 

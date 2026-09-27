@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { tileDef, type ThemeId, type TileVisual, type World } from '@gruntz/core';
 import { createTileKit, type TileKit, type PieceKey } from './tileKit.ts';
+import type { TerrainOptions } from './graphics.ts';
 
 /** Tiles of decorative high ground around the playable map. */
 const PAD = 14;
@@ -135,8 +136,8 @@ export class TerrainView {
   /** Tiles covered by map objects: they get no grass or clutter. */
   private bare = new Set<number>();
 
-  constructor(theme: ThemeId) {
-    this.kit = createTileKit(theme);
+  constructor(theme: ThemeId, options?: TerrainOptions) {
+    this.kit = createTileKit(theme, options);
     this.group.name = 'terrain';
   }
 

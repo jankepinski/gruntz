@@ -1729,3 +1729,107 @@ kbd {
   color: #e8dcff;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.35);
 }
+
+/* --- settings -------------------------------------------------------------------------- */
+.settings-panel {
+  width: min(560px, calc(100vw - 32px));
+  max-height: min(760px, calc(100vh - 32px));
+  gap: 12px;
+}
+.settings-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.settings-tabs {
+  display: flex;
+  gap: 6px;
+}
+.settings-tabs button {
+  flex: 1;
+}
+.settings-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+  min-height: 0;
+  padding-right: 4px;
+}
+.setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.setting-row > span {
+  color: var(--muted);
+}
+.segmented {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.segmented button {
+  padding: 4px 10px;
+  font-size: 13px;
+  border-radius: 8px;
+  background: transparent;
+  border-color: transparent;
+}
+.segmented button.active {
+  background: rgba(255, 255, 255, 0.85);
+  color: var(--ink);
+}
+.segmented button:disabled.active {
+  opacity: 1;
+}
+.setting-hint {
+  margin: -4px 0 2px;
+  font-size: 12px;
+}
+.setting-sep {
+  height: 1px;
+  background: var(--panel-edge);
+  margin: 2px 0;
+}
+.toggle span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.fps-meter {
+  position: absolute;
+  left: 50%;
+  top: 12px;
+  transform: translateX(-50%);
+  padding: 3px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  background: var(--glass);
+  backdrop-filter: var(--blur);
+  border: 1px solid var(--panel-edge);
+  pointer-events: none;
+  font-variant-numeric: tabular-nums;
+}
+.fps-meter b {
+  font-size: 14px;
+}
+.fps-meter span {
+  color: var(--muted);
+  margin-left: 6px;
+}
+.fps-meter.good b {
+  color: var(--good);
+}
+.fps-meter.ok b {
+  color: var(--warn);
+}
+.fps-meter.bad b {
+  color: var(--bad);
+}

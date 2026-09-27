@@ -1,4 +1,4 @@
-import { writeFile } from 'node:fs/promises';
+import { mkdir, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { defineConfig, type Plugin } from 'vite';
 import preact from '@preact/preset-vite';
@@ -42,8 +42,36 @@ function editorSave(): Plugin {
   };
 }
 
+const PREVIEW_DIR = fileURLToPath(new URL('../../assets/previews/', import.meta.url));
+
+/** Dev only: save a PNG sent from the page (frame captures for comparisons) into assets/previews. */
+function devScreenshots(): Plugin {
+  return {
+    name: 'gruntz-dev-screenshots',
+    apply: 'serve',
+    configureServer(server) {
+      server.middlewares.use('/__dev/screenshot', (req, res) => {
+        const name = new URL(req.url ?? '', 'http://x').searchParams.get('name') ?? '';
+        if (req.method !== 'POST' || !/^[a-z0-9][a-z0-9-]{0,63}$/.test(name)) {
+          res.statusCode = 400;
+          res.end();
+          return;
+        }
+        const chunks: Buffer[] = [];
+        req.on('data', (c: Buffer) => chunks.push(c));
+        req.on('end', async () => {
+          const data = Buffer.concat(chunks).toString().replace(/^data:image\/png;base64,/, '');
+          await mkdir(PREVIEW_DIR, { recursive: true });
+          await writeFile(`${PREVIEW_DIR}${name}.png`, Buffer.from(data, 'base64'));
+          res.end('ok');
+        });
+      });
+    },
+  };
+}
+
 export default defineConfig({
-  plugins: [preact(), editorSave()],
+  plugins: [preact(), editorSave(), devScreenshots()],
   server: {
     port: 5173,
     proxy: {

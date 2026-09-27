@@ -26,7 +26,8 @@ export function MenuBackdrop() {
         return; // no WebGL: the CSS gradient stays
       }
       const r = renderer;
-      r.setQuality(settings.get().quality === 'low' ? 'low' : 'medium');
+      // The backdrop sits behind blurred panels: skip the costliest extras.
+      r.setGraphics({ ...settings.get().graphics, ao: false, resolution: Math.min(1.5, settings.get().graphics.resolution) });
       const pool = CAMPAIGN.filter(l => (l.world ?? 0) > 0);
       const level = pool[Math.floor(Math.random() * pool.length)] ?? CAMPAIGN[0]!;
       const world = createWorld(level, { seed: 7, teams: [{ team: 0, name: 'P' }] });

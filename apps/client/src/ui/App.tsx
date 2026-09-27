@@ -9,6 +9,7 @@ import { MultiplayerScreen } from './Multiplayer.tsx';
 import { EditorScreen } from '../editor/EditorScreen.tsx';
 import { EditorModel } from '../editor/model.ts';
 import { MenuBackdrop } from './MenuBackdrop.tsx';
+import { SettingsPanel } from './Settings.tsx';
 
 /** One editor document for the whole session so leaving the editor keeps the work. */
 let editorModel: EditorModel | null = null;
@@ -254,47 +255,5 @@ function BattleSetup({ back, play }: { back: () => void; play: (l: GameLaunch) =
 }
 
 function SettingsScreen({ back }: { back: () => void }) {
-  const s = useStore(settings);
-  const toggle = (key: 'safePath' | 'classicCamera' | 'showLinks' | 'edgeScroll') => (
-    <label class="toggle">
-      <input type="checkbox" checked={s[key]} onChange={() => settings.set({ [key]: !s[key] })} />
-      <span>{t(`settings.${key}`)}</span>
-    </label>
-  );
-  return (
-    <div class="panel">
-      <h2>{t('settings.title')}</h2>
-      <LangSwitch />
-      <label class="field">
-        <span>{t('mp.name')}</span>
-        <input value={s.playerName} maxLength={16} onInput={e => settings.set({ playerName: (e.target as HTMLInputElement).value })} />
-      </label>
-      {toggle('safePath')}
-      {toggle('classicCamera')}
-      {toggle('showLinks')}
-      {toggle('edgeScroll')}
-      <label class="field">
-        <span>{t('settings.quality')}</span>
-        <select value={s.quality} onChange={e => settings.set({ quality: (e.target as HTMLSelectElement).value as 'low' | 'medium' | 'high' })}>
-          <option value="low">{t('settings.low')}</option>
-          <option value="medium">{t('settings.medium')}</option>
-          <option value="high">{t('settings.high')}</option>
-        </select>
-      </label>
-      {(['master', 'music', 'sfx', 'voices'] as const).map(k => (
-        <label class="field slider">
-          <span>{t(`settings.${k}`)}</span>
-          <input
-            type="range"
-            min={0}
-            max={1}
-            step={0.05}
-            value={s.volumes[k]}
-            onInput={e => settings.set({ volumes: { ...s.volumes, [k]: Number((e.target as HTMLInputElement).value) } })}
-          />
-        </label>
-      ))}
-      <button onClick={back}>{t('menu.back')}</button>
-    </div>
-  );
+  return <SettingsPanel onClose={back} />;
 }
