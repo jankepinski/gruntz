@@ -2,7 +2,7 @@ import { TOOL_INFO, type ToolId } from '../data/items.ts';
 import { T } from '../data/tiles.ts';
 import { chebyshev, DIRS, eq, type Point } from '../point.ts';
 import { alertDistance, chase, posesThreat } from './combat.ts';
-import { combatTool, hasFullStamina, isGone, isIdle, move, setTask, walkTask } from './grunt.ts';
+import { combatTool, hasFullStamina, isGone, isIdle, move, setAction, setTask, walkTask } from './grunt.ts';
 import { canMoveTo, canUseWater, Flood, floodOptions } from './path.ts';
 import { useToyOn } from './toys.ts';
 import type { Grunt, Pickup, WalkTask } from './types.ts';
@@ -140,11 +140,16 @@ function idleMove(w: World, g: Grunt): void {
     const to = { x: g.x + d.x, y: g.y + d.y };
     const nearHome = chebyshev(to, { x: g.guardX, y: g.guardY }) <= 2;
     const safe = (w.traits(to.x, to.y) & (T.HOLE | T.PAIN | T.DEATH | T.ARROW | T.CRUMBLE)) === 0;
-    if (nearHome && safe && canMoveTo(w, g, to, canUseWater(g)) && !w.objectAt(to.x, to.y, 'switch')) {
+    // Post guardz hold their post; the otherz shuffle about near home.
+    const post = g.ai === 'PostGuard';
+    if (!post && nearHome && safe && canMoveTo(w, g, to, canUseWater(g)) && !w.objectAt(to.x, to.y, 'switch')) {
       move(w, g, to);
       return;
     }
   }
+  // Standing still: a finished step must not leave the grunt "moving", or it would never
+  // think (or notice intruders) again.
+  if (!isIdle(g)) setAction(w, g, 'idle', 0);
   w.schedule(THINK_MIN + w.randomInt(THINK_RANDOM), 'aiThink', g.id, 'think');
 }
 

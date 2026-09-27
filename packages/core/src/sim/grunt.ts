@@ -304,6 +304,13 @@ export function checkWalk(w: World, g: Grunt, original: WalkTask): boolean {
     return true;
   }
   w.edit(g, { task: null });
+  if (g.ai) {
+    // A blocked enemy thinks again in a moment: thinking right away would pick the very
+    // same chase and loop.
+    if (!isIdle(g)) setAction(w, g, 'idle', 0);
+    w.schedule(BLOCKED_RETRY_TICKS, 'aiThink', g.id, 'think');
+    return true;
+  }
   return false;
 }
 
@@ -355,7 +362,8 @@ export function startOrder(w: World, g: Grunt, order: Order, immediate = false):
       const other = order.target !== undefined ? w.get(order.target, 'grunt') : undefined;
       const x = other ? other.x : order.x;
       const y = other ? other.y : order.y;
-      task = walkTask(x, y, { useToy: true, safe: false });
+      // A toy thrown at a grunt follows that grunt (like an attack), not the tile it stood on.
+      task = walkTask(x, y, { enemy: other?.id, useToy: true, safe: false });
       break;
     }
   }
