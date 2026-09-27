@@ -285,7 +285,7 @@ export const pl: DeepPartial<typeof en> & { items: Record<string, string> } = {
     mirrorY: 'Odbij ↕',
     inspector: 'Właściwości',
     nothingSelected: 'Kliknij obiekt, żeby go edytować. PPM usuwa.',
-    tileInfo: 'Kafelek {x},{y}: {tile}',
+    tileInfo: 'Kafelek {x},{y}: {tile} · wysokość {level}',
     delete: 'Usuń obiekt',
     team: 'Drużyna',
     player: 'Gracz',
@@ -362,6 +362,7 @@ export const pl: DeepPartial<typeof en> & { items: Record<string, string> } = {
     },
     tileGroups: {
       terrain: 'Teren',
+      height: 'Wysokości i schody',
       water: 'Woda i przepaść',
       hazard: 'Zagrożenia',
       arrow: 'Strzałki',
@@ -391,6 +392,10 @@ export const pl: DeepPartial<typeof en> & { items: Record<string, string> } = {
       triggerNoWormhole: 'Sekretny trigger nie jest połączony z teleporterem.',
       padNotWalkable: 'Pad tworzenia na zablokowanym kafelku.',
       ballOnWall: 'Kula w ścianie.',
+      liquidHigh: 'Woda, przepaści i mosty mogą być tylko na najniższym poziomie.',
+      rampTop: 'Schody muszą prowadzić na teren poziom wyżej, po którym da się chodzić.',
+      rampBottom: 'Schody muszą zaczynać się na terenie ich własnego poziomu.',
+      arrowOffEdge: 'Strzałka wskazuje za krawędź urwiska.',
       teamOutOfRange: 'Obiekt dla slotu gracza, którego mapa nie ma.',
     },
     themes: {
