@@ -223,17 +223,27 @@ def build_teeth(mats):
         C.apply_transform(t)
         C.set_material(t, mats['tooth'])
         parts.append(t)
+    # Lower fangz, measured against the finished head: the mouth slit is only ~2 cm deep
+    # (lower lip bulges out to y=-0.205 at z=0.50, the gum slopes back to the cavity wall at
+    # y=-0.186, the upper lip hangs down to z~0.545 at y=-0.21). Each fang is rooted in the
+    # gum behind the lower lip and leans forward so the tip juts out in front of the mouth,
+    # free in the air more than 1 cm below the upper lip.
     for s in (-1, 1):
-        bpy.ops.mesh.primitive_cone_add(vertices=6, radius1=0.014, radius2=0.003, depth=0.04,
-                                        location=(s * 0.07, -0.2, 0.51))
+        root = Vector((s * 0.046, -0.188, 0.507))
+        tilt, splay, length = math.radians(40), math.radians(s * 6), 0.036
+        direction = Vector((math.cos(tilt) * math.sin(splay), -math.sin(tilt), math.cos(tilt) * math.cos(splay)))
+        bpy.ops.mesh.primitive_cone_add(vertices=10, radius1=0.0105, radius2=0.0018, depth=length,
+                                        location=root + direction * (length / 2))
         t = bpy.context.active_object
-        t.rotation_euler = Euler((math.radians(-8), math.radians(s * 10), 0))
+        # Blender cones point up (+Z) from radius1 to radius2; XYZ euler = X tilt, then Y splay.
+        t.rotation_euler = Euler((tilt, splay, 0))
         t.name = f'fang_{s}'
         C.apply_transform(t)
         C.set_material(t, mats['tooth'])
         parts.append(t)
-    # dark mouth interior so the carved slit reads as a mouth
-    mouth = uv_sphere('mouth', (0, -0.185, 0.522), 0.07, 16, 10, scale=(1.1, 0.35, 0.25))
+    # Dark mouth interior: a thin dark lens right in front of the cavity's back wall, so the
+    # slit reads as a mouth and the teeth in it stay in front of the dark.
+    mouth = uv_sphere('mouth', (0, -0.18, 0.525), 0.07, 16, 10, scale=(1.3, 0.136, 0.3))
     C.set_material(mouth, mats['mouth'])
     parts.append(mouth)
     return parts
