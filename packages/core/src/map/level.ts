@@ -98,6 +98,11 @@ export interface LevelData {
   legend?: Record<string, string>;
   /** One string per row, one character per tile. */
   tiles: string[];
+  /**
+   * Height levels, one digit per tile ('0' ground ... MAX_LEVEL). Omitted for flat maps.
+   * Walkable tiles of different levels only connect through stairz (RAMP tiles).
+   */
+  heights?: string[];
   objects: LevelObject[];
   /** Quest: items the grunt machine hands out, in megaphone order. */
   megaphone?: ItemId[];
@@ -174,6 +179,33 @@ export function parseTiles(level: Pick<LevelData, 'tiles' | 'legend'>): {
   return { width, height, tiles };
 }
 
+/** Highest height level a map may use. */
+export const MAX_LEVEL = 3;
+
+/** Height level per tile (all zero when the level has no height rows). */
+export function parseHeights(level: Pick<LevelData, 'heights'>, width: number, height: number): number[] {
+  const out = new Array<number>(width * height).fill(0);
+  if (!level.heights) return out;
+  for (let y = 0; y < height; y++) {
+    const row = level.heights[y] ?? '';
+    for (let x = 0; x < width; x++) {
+      const ch = row[x] ?? '0';
+      const v = ch.charCodeAt(0) - 48;
+      if (!(v >= 0 && v <= MAX_LEVEL)) throw new Error(`Bad height '${ch}' at ${x},${y}`);
+      out[y * width + x] = v;
+    }
+  }
+  return out;
+}
+
+/** Height rows for a level (undefined when everything is on the ground). */
+export function heightRows(heights: readonly number[], width: number, height: number): string[] | undefined {
+  if (!heights.some(h => h > 0)) return undefined;
+  const rows: string[] = [];
+  for (let y = 0; y < height; y++) rows.push(heights.slice(y * width, (y + 1) * width).join(''));
+  return rows;
+}
+
 function emptyStats(): TeamState['stats'] {
   return { coins: 0, secrets: 0, letters: '', toolz: 0, toyz: 0, powerupz: 0, deaths: 0, kills: 0 };
 }
@@ -186,7 +218,8 @@ function pathPoints(o: { x: number; y: number; points: [number, number][] }): { 
 /** Build the initial world for a level. */
 export function createWorld(level: LevelData, setup: WorldSetup): World {
   const { width, height, tiles } = parseTiles(level);
-  const w = new World(width, height, tiles, level.theme, level.mode, setup.seed);
+  const heights = parseHeights(level, width, height);
+  const w = new World(width, height, tiles, level.theme, level.mode, setup.seed, heights);
   const alliances = [0, 1, 2, 3, 4];
   const ovenCount = level.ovens ?? (level.mode === 'battle' ? 3 : 3);
 

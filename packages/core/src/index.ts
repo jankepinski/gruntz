@@ -7,6 +7,7 @@ export * from './data/items.ts';
 export * from './sim/types.ts';
 export * from './sim/world.ts';
 export * from './sim/path.ts';
+export * from './sim/elevation.ts';
 export * from './sim/grunt.ts';
 export * from './sim/combat.ts';
 export * from './sim/tools.ts';

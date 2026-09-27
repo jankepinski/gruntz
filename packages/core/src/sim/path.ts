@@ -1,6 +1,7 @@
 import { TOOL_INFO } from '../data/items.ts';
 import { T } from '../data/tiles.ts';
 import { DIRS, type Dir, type Point } from '../point.ts';
+import { levelsConnect } from './elevation.ts';
 import type { Grunt } from './types.ts';
 import type { World } from './world.ts';
 
@@ -23,9 +24,11 @@ export function canUseWater(grunt: Grunt): boolean {
 
 /**
  * Walking between two tiles is blocked diagonally by solid corners (and a two-tile
- * spring jump needs its whole corridor free of solid tiles).
+ * spring jump needs its whole corridor free of solid tiles), and by cliffs between
+ * height levels (see elevation.ts).
  */
 export function canMoveBetween(w: World, from: Point, to: Point): boolean {
+  if (!levelsConnect(w, from, to)) return false;
   const dx = to.x - from.x;
   const dy = to.y - from.y;
   if (Math.abs(dx) === 2 || Math.abs(dy) === 2) {

@@ -35,6 +35,8 @@ export const T = {
   HILL: 1 << 17,
   /** Toggle bridge that goes up and down on its own. */
   AUTO: 1 << 18,
+  /** Stairs up to the next height level (see TileDef.ramp). */
+  RAMP: 1 << 19,
 } as const;
 
 export type SwitchKind =
@@ -69,6 +71,7 @@ export type TileVisual =
   | { kind: 'crumble' }
   | { kind: 'bridge'; lowered: boolean; over: 'water' | 'death'; auto: boolean }
   | { kind: 'arrow'; dir: Dir; twoWay: boolean }
+  | { kind: 'ramp'; dir: Dir }
   | { kind: 'switch'; switchKind: SwitchKind; hold: boolean; pressed: boolean }
   | { kind: 'pyramid'; pyramidKind: PyramidKind; lowered: boolean };
 
@@ -79,6 +82,8 @@ export interface TileDef {
   /** Tile this one becomes when toggled (broken, dug, triggered, crumbled...). */
   toggle?: string;
   arrow?: Dir;
+  /** Stairs: the side (0 N, 2 E, 4 S, 6 W) that leads one height level up. */
+  ramp?: Dir;
   switchKind?: SwitchKind;
   hold?: boolean;
   pyramidKind?: PyramidKind;
@@ -214,6 +219,12 @@ for (const [name, pyramidKind] of PYRAMIDS) {
     pyramidKind,
     visual: { kind: 'pyramid', pyramidKind, lowered: true },
   });
+}
+
+// --- stairz: walk one height level up towards `ramp` ---------------------------------
+// (added last so the ids of the older tiles stay the same)
+for (const [name, dir] of ARROW_DIRS) {
+  add({ name: `RAMP_${name}`, traits: T.RAMP, ramp: dir, visual: { kind: 'ramp', dir } });
 }
 
 export const TILE_DEFS: readonly TileDef[] = defs.map((d, id) => ({ ...d, id }));

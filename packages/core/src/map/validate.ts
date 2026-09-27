@@ -1,5 +1,5 @@
 import { T, tileByName, type TileDef } from '../data/tiles.ts';
-import type { LevelData, LevelObject } from './level.ts';
+import { parseHeights, type LevelData, type LevelObject } from './level.ts';
 import { levelToGrid, type TileGrid } from './edit.ts';
 
 /**
@@ -30,7 +30,11 @@ export interface LevelIssue {
     | 'triggerNoWormhole'
     | 'padNotWalkable'
     | 'ballOnWall'
-    | 'teamOutOfRange';
+    | 'teamOutOfRange'
+    | 'liquidHigh'
+    | 'rampTop'
+    | 'rampBottom'
+    | 'arrowOffEdge';
   x?: number;
   y?: number;
   /** Index into level.objects. */
@@ -46,6 +50,11 @@ function def(grid: TileGrid, x: number, y: number): TileDef | undefined {
 
 function walkable(d: TileDef | undefined): boolean {
   return !!d && !(d.traits & (T.SOLID | T.NOGO | T.WATER | T.DEATH | T.HOLE));
+}
+
+/** Walkable now or once opened (pyramidz lowered, rockz or brickz broken, bridgez raised). */
+function passable(d: TileDef | undefined): boolean {
+  return walkable(d) || (!!d && (d.traits & (T.PYRAMID | T.BREAK | T.LAY | T.BRIDGE)) !== 0);
 }
 
 /** Tiles a switch can toggle: pyramids, bridges, two-way arrows (flags are objects). */
@@ -188,6 +197,44 @@ export function validateLevel(level: LevelData): LevelIssue[] {
       const d = def(grid, x, y)!;
       if (d.traits & T.SWITCH && !switchAt.has(y * width + x) && d.switchKind !== 'red') {
         add('warning', 'switchTileNoObject', undefined, undefined, { x, y });
+      }
+    }
+  }
+
+  // --- height levels -----------------------------------------------------------------------
+  let heights: number[];
+  try {
+    heights = parseHeights(level, width, height);
+  } catch {
+    return [...issues, { severity: 'error', code: 'badTiles' }];
+  }
+  const lv = (x: number, y: number) => (inside(x, y) ? heights[y * width + x]! : -1);
+  const STEP: Record<number, [number, number]> = { 0: [0, -1], 2: [1, 0], 4: [0, 1], 6: [-1, 0] };
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const d = def(grid, x, y)!;
+      const h = lv(x, y);
+      // Water, abysses and whatever turns into them only exist on the ground level.
+      if (h > 0 && d.traits & (T.WATER | T.DEATH | T.BRIDGE | T.CRUMBLE))
+        add('error', 'liquidHigh', undefined, undefined, { x, y });
+      if (d.ramp !== undefined) {
+        const [sx, sy] = STEP[d.ramp]!;
+        const top = def(grid, x + sx, y + sy);
+        const bottom = def(grid, x - sx, y - sy);
+        // The top side must meet walkable ground one level up (or the next flight of stairz)...
+        const topLevel =
+          top?.ramp === d.ramp ? lv(x + sx, y + sy) : top?.ramp === undefined ? lv(x + sx, y + sy) - 1 : -9;
+        if (!passable(top) || topLevel !== h) add('warning', 'rampTop', undefined, undefined, { x, y });
+        // ...and the bottom side ground on its own level.
+        const bottomLevel =
+          bottom?.ramp === d.ramp ? lv(x - sx, y - sy) + 1 : bottom?.ramp === undefined ? lv(x - sx, y - sy) : -9;
+        if (!passable(bottom) || bottomLevel !== h) add('warning', 'rampBottom', undefined, undefined, { x, y });
+      }
+      if (d.visual.kind === 'arrow') {
+        const [sx, sy] = STEP[d.visual.dir]!;
+        const next = def(grid, x + sx, y + sy);
+        if (next && next.ramp === undefined && d.ramp === undefined && lv(x + sx, y + sy) !== h && walkable(next))
+          add('warning', 'arrowOffEdge', undefined, undefined, { x, y });
       }
     }
   }

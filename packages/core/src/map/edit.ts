@@ -1,6 +1,6 @@
 import { TILE_DEFS, tileDef } from '../data/tiles.ts';
 import type { Dir, Point } from '../point.ts';
-import { DEFAULT_LEGEND, parseTiles, type LevelData, type LevelObject } from './level.ts';
+import { DEFAULT_LEGEND, heightRows, parseHeights, parseTiles, type LevelData, type LevelObject } from './level.ts';
 
 /**
  * Editing helpers for the level editor. The editor works on a grid of tile names;
@@ -8,6 +8,8 @@ import { DEFAULT_LEGEND, parseTiles, type LevelData, type LevelObject } from './
  */
 
 export type TileGrid = string[][];
+/** Height level per tile, row by row (same shape as the tile grid). */
+export type HeightGrid = number[][];
 
 export function levelToGrid(level: Pick<LevelData, 'tiles' | 'legend'>): TileGrid {
   const { width, height, tiles } = parseTiles(level);
@@ -18,6 +20,14 @@ export function levelToGrid(level: Pick<LevelData, 'tiles' | 'legend'>): TileGri
     grid.push(row);
   }
   return grid;
+}
+
+export function levelToHeights(level: Pick<LevelData, 'tiles' | 'legend' | 'heights'>): HeightGrid {
+  const { width, height } = parseTiles(level);
+  const flat = parseHeights(level, width, height);
+  const out: HeightGrid = [];
+  for (let y = 0; y < height; y++) out.push(flat.slice(y * width, (y + 1) * width));
+  return out;
 }
 
 const LEGEND_POOL = 'abcdfijklqtuvyzACDEFHIJKLNOPQSTUVWXYZ0123456789!$%&*+?;:<>/|(){}[]@"\'`\\'.split('');
@@ -84,6 +94,36 @@ export function floodRegion(grid: TileGrid, start: Point, limit = 10000): Point[
   return out;
 }
 
+/** Contiguous region of one height level (4-neighbourhood). */
+export function floodHeights(heights: HeightGrid, start: Point, limit = 10000): Point[] {
+  const height = heights.length;
+  const width = heights[0]?.length ?? 0;
+  const level = heights[start.y]?.[start.x];
+  if (level === undefined) return [];
+  const seen = new Uint8Array(width * height);
+  const out: Point[] = [];
+  const stack: Point[] = [start];
+  seen[start.y * width + start.x] = 1;
+  while (stack.length && out.length < limit) {
+    const p = stack.pop()!;
+    out.push(p);
+    for (const [dx, dy] of [
+      [1, 0],
+      [-1, 0],
+      [0, 1],
+      [0, -1],
+    ] as const) {
+      const x = p.x + dx;
+      const y = p.y + dy;
+      if (x < 0 || y < 0 || x >= width || y >= height || seen[y * width + x]) continue;
+      if (heights[y]![x] !== level) continue;
+      seen[y * width + x] = 1;
+      stack.push({ x, y });
+    }
+  }
+  return out;
+}
+
 /** Every tile coordinate an object refers to, so moves and resizes can shift them together. */
 function mapObjectPoints(o: LevelObject, f: (x: number, y: number) => [number, number]): LevelObject {
   const [x, y] = f(o.x, o.y);
@@ -129,12 +169,19 @@ export function resizeLevel(
   ox: number,
   oy: number,
   fill = 'GROUND',
-): { grid: TileGrid; objects: LevelObject[] } {
+  heights?: HeightGrid,
+): { grid: TileGrid; objects: LevelObject[]; heights: HeightGrid } {
   const next: TileGrid = [];
+  const nextHeights: HeightGrid = [];
   for (let y = 0; y < height; y++) {
     const row: string[] = [];
-    for (let x = 0; x < width; x++) row.push(grid[y - oy]?.[x - ox] ?? fill);
+    const hrow: number[] = [];
+    for (let x = 0; x < width; x++) {
+      row.push(grid[y - oy]?.[x - ox] ?? fill);
+      hrow.push(heights?.[y - oy]?.[x - ox] ?? 0);
+    }
     next.push(row);
+    nextHeights.push(hrow);
   }
   const inside = (x: number, y: number) => x >= 0 && y >= 0 && x < width && y < height;
   const moved: LevelObject[] = [];
@@ -152,7 +199,7 @@ export function resizeLevel(
     if (m.type === 'secret' && !inside(m.wx, m.wy)) continue;
     moved.push(m);
   }
-  return { grid: next, objects: moved };
+  return { grid: next, objects: moved, heights: nextHeights };
 }
 
 /** Move one object; its own links stay where they are. */
@@ -165,11 +212,12 @@ export function mirrorLevel(
   grid: TileGrid,
   objects: LevelObject[],
   axis: 'x' | 'y',
-): { grid: TileGrid; objects: LevelObject[] } {
+  heights?: HeightGrid,
+): { grid: TileGrid; objects: LevelObject[]; heights: HeightGrid } {
   const { width, height } = gridSize(grid);
   const flipName = (n: string): string => {
     const swap: Record<string, string> = axis === 'x' ? { E: 'W', W: 'E' } : { N: 'S', S: 'N' };
-    const m = /^(ARROW2?_)([NESW])$/.exec(n);
+    const m = /^(ARROW2?_|RAMP_)([NESW])$/.exec(n);
     return m && swap[m[2]!] ? `${m[1]}${swap[m[2]!]}` : n;
   };
   const next =
@@ -181,8 +229,17 @@ export function mirrorLevel(
           .map(row => row.map(flipName));
   const f = (x: number, y: number): [number, number] => (axis === 'x' ? [width - 1 - x, y] : [x, height - 1 - y]);
   const flipDir = (d: Dir): Dir => (axis === 'x' ? (8 - d) % 8 : (12 - d) % 8) as Dir;
+  const h = heights ?? grid.map(row => row.map(() => 0));
+  const nextHeights =
+    axis === 'x'
+      ? h.map(row => row.slice().reverse())
+      : h
+          .slice()
+          .reverse()
+          .map(row => row.slice());
   return {
     grid: next,
+    heights: nextHeights,
     objects: objects.map(o => {
       const m = mapObjectPoints(o, f);
       if (m.type === 'ball' || m.type === 'dropper') return { ...m, dir: flipDir(m.dir) };
@@ -200,10 +257,15 @@ export function buildLevel(
   meta: Omit<LevelData, 'tiles' | 'legend' | 'objects'>,
   grid: TileGrid,
   objects: LevelObject[],
+  heights?: HeightGrid,
 ): LevelData {
   const { tiles, legend } = gridToTiles(grid);
   const level: LevelData = { ...meta, tiles, objects };
   if (Object.keys(legend).length) level.legend = legend;
+  const { width, height } = gridSize(grid);
+  const rows = heights ? heightRows(heights.flat(), width, height) : meta.heights;
+  if (rows) level.heights = rows;
+  else delete level.heights;
   // Stable key order makes diffs of level files readable.
   const ordered: Record<string, unknown> = {};
   for (const k of [
@@ -221,6 +283,7 @@ export function buildLevel(
     'resources',
     'legend',
     'tiles',
+    'heights',
     'objects',
   ]) {
     const v = (level as unknown as Record<string, unknown>)[k];
@@ -271,7 +334,7 @@ export function formatLevel(level: LevelData): string {
   const lines = ['{'];
   entries.forEach(([key, value], i) => {
     const comma = i < entries.length - 1 ? ',' : '';
-    if (key === 'tiles' || key === 'objects') {
+    if (key === 'tiles' || key === 'heights' || key === 'objects') {
       const items = value as unknown[];
       lines.push(`  ${JSON.stringify(key)}: [`);
       items.forEach((item, j) => lines.push(`    ${JSON.stringify(item)}${j < items.length - 1 ? ',' : ''}`));

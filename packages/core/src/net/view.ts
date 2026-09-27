@@ -55,6 +55,8 @@ export interface ViewSnapshot {
   mode: World['mode'];
   alliances: number[];
   tiles: number[];
+  /** Height levels (fixed for the game, omitted on flat maps). */
+  heights?: number[];
   entities: Entity[];
 }
 
@@ -102,6 +104,7 @@ export class ViewTracker {
       mode: w.mode,
       alliances: w.alliances.slice(),
       tiles: this.tiles.slice(),
+      ...(w.maxLevel > 0 ? { heights: w.heights.slice() } : {}),
       entities,
     };
   }
