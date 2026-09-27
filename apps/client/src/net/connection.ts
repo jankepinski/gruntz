@@ -21,7 +21,14 @@ export interface ConnectionState {
  * the active game transport. Reconnects automatically and resumes with the saved token.
  */
 export class Connection {
-  readonly state = new Store<ConnectionState>({ status: 'connecting', playerId: null, name: '', rooms: [], room: null, error: null });
+  readonly state = new Store<ConnectionState>({
+    status: 'connecting',
+    playerId: null,
+    name: '',
+    rooms: [],
+    room: null,
+    error: null,
+  });
   private ws: WebSocket | null = null;
   private gameListeners = new Set<(msg: GameServerMsg) => void>();
   private startListeners = new Set<(msg: GameServerMsg) => void>();
@@ -92,7 +99,10 @@ export class Connection {
         break;
       case 'chat': {
         const room = this.state.get().room;
-        if (room) this.state.set({ room: { ...room, chat: [...room.chat, { from: lobby.from, text: lobby.text, at: lobby.at }] } });
+        if (room)
+          this.state.set({
+            room: { ...room, chat: [...room.chat, { from: lobby.from, text: lobby.text, at: lobby.at }] },
+          });
         break;
       }
       case 'error':

@@ -37,10 +37,7 @@ export type GameServerMsg =
   | { t: 'end'; end: GameEnd }
   | { t: 'pong'; c: number; s: number };
 
-export type GameClientMsg =
-  | { t: 'cmd'; seq: number; c: Command }
-  | { t: 'resync' }
-  | { t: 'ping'; c: number };
+export type GameClientMsg = { t: 'cmd'; seq: number; c: Command } | { t: 'resync' } | { t: 'ping'; c: number };
 
 // --- lobby (WebSocket only) -------------------------------------------------------------
 

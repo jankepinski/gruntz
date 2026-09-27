@@ -38,17 +38,7 @@ export const AI_TYPES: readonly AiType[] = [
 ];
 
 export type DeathKind =
-  | 'EXPLODE'
-  | 'SINK'
-  | 'BURN'
-  | 'FALL'
-  | 'MELT'
-  | 'SQUASH'
-  | 'ELECTROCUTE'
-  | 'SHATTER'
-  | 'KARAOKE'
-  | 'HOLE'
-  | 'GOO';
+  'EXPLODE' | 'SINK' | 'BURN' | 'FALL' | 'MELT' | 'SQUASH' | 'ELECTROCUTE' | 'SHATTER' | 'KARAOKE' | 'HOLE' | 'GOO';
 
 export type ActionKind =
   | 'idle'

@@ -61,8 +61,24 @@ import {
 } from 'lucide-preact';
 import { EditorView, isTyping } from './EditorView.ts';
 import type { EditorModel, EditorTool, ObjectTemplate } from './model.ts';
-import { groupLabel, ObjectThumb, TILE_GROUPS, tileLabel, TileCardArt, useThumbnails, type TileGroupId } from './palette.tsx';
-import { customLevels, deleteCustomLevel, downloadLevel, parseLevelText, readLevelFile, saveCustomLevel, saveToContent } from './library.ts';
+import {
+  groupLabel,
+  ObjectThumb,
+  TILE_GROUPS,
+  tileLabel,
+  TileCardArt,
+  useThumbnails,
+  type TileGroupId,
+} from './palette.tsx';
+import {
+  customLevels,
+  deleteCustomLevel,
+  downloadLevel,
+  parseLevelText,
+  readLevelFile,
+  saveCustomLevel,
+  saveToContent,
+} from './library.ts';
 
 const THEMES: ThemeId[] = ['training', 'rocky', 'ice', 'tropics', 'sweetz', 'rollerz', 'shrunk', 'minis', 'space'];
 const ALL_ITEMS: ItemId[] = [...TOOLS, ...TOYS, ...POWERUPS, ...UTILITIES, ...CURSES, ...REWARDS];
@@ -76,7 +92,11 @@ export function EditorScreen({ model, back }: { model: EditorModel; back: () => 
   if (test) {
     return (
       <div class="editor-test">
-        <GameScreen launch={test} onExit={() => setTest(null)} onRestart={() => setTest({ ...test, seed: newSeed() })} />
+        <GameScreen
+          launch={test}
+          onExit={() => setTest(null)}
+          onRestart={() => setTest({ ...test, seed: newSeed() })}
+        />
         <button class="editor-test-back primary" onClick={() => setTest(null)}>
           ✎ {t('editor.backToEditor')}
         </button>
@@ -90,7 +110,8 @@ export function testLaunch(level: LevelData): GameLaunch {
   const name = settings.get().playerName || t('menu.you');
   const players: PlayerInfo[] = [{ team: 0, name, alliance: 0 }];
   if (level.mode === 'battle') {
-    for (let i = 1; i < (level.players ?? 2); i++) players.push({ team: i, name: `Bot ${i}`, alliance: i, bot: 'normal' });
+    for (let i = 1; i < (level.players ?? 2); i++)
+      players.push({ team: i, name: `Bot ${i}`, alliance: i, bot: 'normal' });
   }
   return { kind: 'sp', level, players, team: 0, seed: newSeed(), test: true };
 }
@@ -213,7 +234,8 @@ function Workspace({ model, back, onTest }: { model: EditorModel; back: () => vo
           model.state.set({ selected: index });
           setPanel('inspector');
           const o = model.doc.objects[index]!;
-          if (o.type === 'wormhole' || o.type === 'secret' || o.type === 'cloud' || o.type === 'ufo') model.state.set({ tool: 'link' });
+          if (o.type === 'wormhole' || o.type === 'secret' || o.type === 'cloud' || o.type === 'ufo')
+            model.state.set({ tool: 'link' });
           break;
         }
         case 'select':
@@ -405,7 +427,14 @@ function Workspace({ model, back, onTest }: { model: EditorModel; back: () => vo
         return;
       }
       if (mod || e.altKey) return;
-      const tools: Record<string, EditorTool> = { KeyB: 'paint', KeyR: 'rect', KeyG: 'fill', KeyO: 'object', KeyV: 'select', KeyL: 'link' };
+      const tools: Record<string, EditorTool> = {
+        KeyB: 'paint',
+        KeyR: 'rect',
+        KeyG: 'fill',
+        KeyO: 'object',
+        KeyV: 'select',
+        KeyL: 'link',
+      };
       const tool = tools[e.code];
       if (tool) {
         model.state.set({ tool });
@@ -482,7 +511,9 @@ function Workspace({ model, back, onTest }: { model: EditorModel; back: () => vo
             { icon: <FolderOpen size={15} />, label: t('editor.open'), run: () => setOpenDialog(true) },
             null,
             { icon: <Save size={15} />, label: t('editor.save'), hint: 'Ctrl+S', run: save },
-            ...(import.meta.env.DEV ? [{ icon: <HardDrive size={15} />, label: t('editor.saveContent'), run: () => void saveContent() }] : []),
+            ...(import.meta.env.DEV
+              ? [{ icon: <HardDrive size={15} />, label: t('editor.saveContent'), run: () => void saveContent() }]
+              : []),
             null,
             { icon: <Download size={15} />, label: t('editor.export'), run: () => downloadLevel(model.level()) },
             { icon: <Upload size={15} />, label: t('editor.import'), run: () => fileRef.current?.click() },
@@ -493,20 +524,41 @@ function Workspace({ model, back, onTest }: { model: EditorModel; back: () => vo
       </div>
 
       <div class="ed-float ed-topright">
-        <button class="icon-btn ghost" disabled={!s.canUndo} title={`${t('editor.undo')} (Ctrl+Z)`} onClick={() => model.undo()}>
+        <button
+          class="icon-btn ghost"
+          disabled={!s.canUndo}
+          title={`${t('editor.undo')} (Ctrl+Z)`}
+          onClick={() => model.undo()}
+        >
           <Undo2 size={17} />
         </button>
-        <button class="icon-btn ghost" disabled={!s.canRedo} title={`${t('editor.redo')} (Ctrl+Y)`} onClick={() => model.redo()}>
+        <button
+          class="icon-btn ghost"
+          disabled={!s.canRedo}
+          title={`${t('editor.redo')} (Ctrl+Y)`}
+          onClick={() => model.redo()}
+        >
           <Redo2 size={17} />
         </button>
-        <button class={`icon-btn ghost ${s.showGrid ? 'active' : ''}`} title={t('editor.grid')} onClick={() => model.state.set({ showGrid: !s.showGrid })}>
+        <button
+          class={`icon-btn ghost ${s.showGrid ? 'active' : ''}`}
+          title={t('editor.grid')}
+          onClick={() => model.state.set({ showGrid: !s.showGrid })}
+        >
           <Grid3x3 size={17} />
         </button>
         <span class="ed-sep" />
-        <button class={`ghost ${card === 'level' ? 'active' : ''}`} onClick={() => setCard(card === 'level' ? null : 'level')}>
+        <button
+          class={`ghost ${card === 'level' ? 'active' : ''}`}
+          onClick={() => setCard(card === 'level' ? null : 'level')}
+        >
           <Settings2 size={16} /> {t('editor.level')}
         </button>
-        <button class={`ghost ${card === 'problems' ? 'active' : ''}`} onClick={() => setCard(card === 'problems' ? null : 'problems')} title={t('editor.problems')}>
+        <button
+          class={`ghost ${card === 'problems' ? 'active' : ''}`}
+          onClick={() => setCard(card === 'problems' ? null : 'problems')}
+          title={t('editor.problems')}
+        >
           <TriangleAlert size={16} />
           {errors > 0 && <span class="badge bad">{errors}</span>}
           {warnings > 0 && <span class="badge warn">{warnings}</span>}
@@ -522,8 +574,18 @@ function Workspace({ model, back, onTest }: { model: EditorModel; back: () => vo
       {(card || showInspector) && (
         <div class="ed-float ed-card">
           <div class="ed-card-head">
-            <strong>{card === 'level' ? t('editor.level') : card === 'problems' ? t('editor.problems') : t('editor.inspector')}</strong>
-            <button class="icon-btn ghost" onClick={() => (card ? setCard(null) : model.state.set({ selected: null }))} title="Esc">
+            <strong>
+              {card === 'level'
+                ? t('editor.level')
+                : card === 'problems'
+                  ? t('editor.problems')
+                  : t('editor.inspector')}
+            </strong>
+            <button
+              class="icon-btn ghost"
+              onClick={() => (card ? setCard(null) : model.state.set({ selected: null }))}
+              title="Esc"
+            >
               <X size={16} />
             </button>
           </div>
@@ -546,7 +608,9 @@ function Workspace({ model, back, onTest }: { model: EditorModel; back: () => vo
       />
 
       {s.hover && hoverTile && (
-        <div class={`ed-status ${dockOpen ? '' : 'low'}`}>{t('editor.tileInfo', { x: s.hover.x, y: s.hover.y, tile: tileLabel(hoverTile) })}</div>
+        <div class={`ed-status ${dockOpen ? '' : 'low'}`}>
+          {t('editor.tileInfo', { x: s.hover.x, y: s.hover.y, tile: tileLabel(hoverTile) })}
+        </div>
       )}
       {s.tool === 'link' && <LinkHint model={model} selected={s.selected} />}
       {toast && <div class={`editor-toast ${toast.bad ? 'bad' : ''}`}>{toast.text}</div>}
@@ -653,7 +717,17 @@ const TOOL_ICONS: Record<EditorTool, [JSX.Element, string]> = {
   link: [<Link size={17} />, 'L'],
 };
 
-function ToolRail({ model, tool, brush, setPalette }: { model: EditorModel; tool: EditorTool; brush: number; setPalette: (p: 'tiles' | 'objects') => void }) {
+function ToolRail({
+  model,
+  tool,
+  brush,
+  setPalette,
+}: {
+  model: EditorModel;
+  tool: EditorTool;
+  brush: number;
+  setPalette: (p: 'tiles' | 'objects') => void;
+}) {
   const pick = (next: EditorTool) => {
     model.state.set({ tool: next });
     if (next === 'object') setPalette('objects');
@@ -662,14 +736,21 @@ function ToolRail({ model, tool, brush, setPalette }: { model: EditorModel; tool
   return (
     <div class="ed-float ed-rail">
       {(Object.keys(TOOL_ICONS) as EditorTool[]).map(id => (
-        <button class={`tool-btn ghost ${tool === id ? 'active' : ''}`} title={`${t(`editor.${id}` as Key)} (${TOOL_ICONS[id][1]})`} onClick={() => pick(id)}>
+        <button
+          class={`tool-btn ghost ${tool === id ? 'active' : ''}`}
+          title={`${t(`editor.${id}` as Key)} (${TOOL_ICONS[id][1]})`}
+          onClick={() => pick(id)}
+        >
           {TOOL_ICONS[id][0]}
         </button>
       ))}
       {tool === 'paint' && (
         <div class="rail-brush" title={t('editor.brush')}>
           {[1, 2, 3, 5].map(n => (
-            <button class={`tool-btn small ghost ${brush === n ? 'active' : ''}`} onClick={() => model.state.set({ brush: n })}>
+            <button
+              class={`tool-btn small ghost ${brush === n ? 'active' : ''}`}
+              onClick={() => model.state.set({ brush: n })}
+            >
               {n}
             </button>
           ))}
@@ -706,10 +787,12 @@ function Dock({
   const template = s.template;
   const kind = templateKind(template);
   const choose = (tpl: ObjectTemplate) => model.state.set({ template: tpl, tool: 'object' });
-  const pickTile = (tile: string) => model.state.set({ tile, tool: s.tool === 'rect' || s.tool === 'fill' || s.tool === 'paint' ? s.tool : 'paint' });
+  const pickTile = (tile: string) =>
+    model.state.set({ tile, tool: s.tool === 'rect' || s.tool === 'fill' || s.tool === 'paint' ? s.tool : 'paint' });
   const setTeamAll = (n: number) => {
     setTeam(n);
-    if ((template.type === 'grunt' && !template.ai) || template.type === 'fort' || template.type === 'pad') choose({ ...template, team: n } as ObjectTemplate);
+    if ((template.type === 'grunt' && !template.ai) || template.type === 'fort' || template.type === 'pad')
+      choose({ ...template, team: n } as ObjectTemplate);
   };
   const group = TILE_GROUPS.find(g => g.id === category);
   return (
@@ -731,11 +814,20 @@ function Dock({
         {mode === 'battle' && (category === 'objects' || category === 'items') && (
           <span class="team-pick">
             {[0, 1, 2, 3].map(n => (
-              <button class={`team-dot ${team === n ? 'active' : ''}`} style={{ background: hex(TEAM_COLORS[n]!) }} onClick={() => setTeamAll(n)} title={`${t('editor.team')} ${n + 1}`} />
+              <button
+                class={`team-dot ${team === n ? 'active' : ''}`}
+                style={{ background: hex(TEAM_COLORS[n]!) }}
+                onClick={() => setTeamAll(n)}
+                title={`${t('editor.team')} ${n + 1}`}
+              />
             ))}
           </span>
         )}
-        <button class="icon-btn ghost" onClick={() => setOpen(!open)} title={open ? t('editor.hideDock') : t('editor.showDock')}>
+        <button
+          class="icon-btn ghost"
+          onClick={() => setOpen(!open)}
+          title={open ? t('editor.hideDock') : t('editor.showDock')}
+        >
           {open ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
         </button>
       </div>
@@ -743,16 +835,29 @@ function Dock({
         <div class="dock-row">
           {group &&
             group.tiles.map(name => (
-              <button class={`dock-card ${s.tile === name && s.tool !== 'object' ? 'active' : ''}`} title={name} onClick={() => pickTile(name)}>
+              <button
+                class={`dock-card ${s.tile === name && s.tool !== 'object' ? 'active' : ''}`}
+                title={name}
+                onClick={() => pickTile(name)}
+              >
                 <TileCardArt name={name} theme={theme} />
                 <span class="dock-label">{tileLabel(name)}</span>
               </button>
             ))}
           {category === 'objects' &&
             OBJECT_KINDS.map(k => (
-              <button class={`dock-card ${kind === k.id && s.tool === 'object' ? 'active' : ''}`} onClick={() => choose(k.template(team, mode))}>
+              <button
+                class={`dock-card ${kind === k.id && s.tool === 'object' ? 'active' : ''}`}
+                onClick={() => choose(k.template(team, mode))}
+              >
                 <span class="card-art">
-                  <ObjectThumb id={k.id} theme={theme} obj={{ x: 0, y: 0, ...k.template(0, mode) } as LevelObject} fallback={k.icon} size={76} />
+                  <ObjectThumb
+                    id={k.id}
+                    theme={theme}
+                    obj={{ x: 0, y: 0, ...k.template(0, mode) } as LevelObject}
+                    fallback={k.icon}
+                    size={76}
+                  />
                 </span>
                 <span class="dock-label">{t(`editor.objectTypes.${k.id}` as Key)}</span>
               </button>
@@ -775,8 +880,16 @@ function Dock({
   );
 }
 
-const OBJECT_KINDS: { id: string; icon: string; template: (team: number, mode: LevelData['mode']) => ObjectTemplate }[] = [
-  { id: 'grunt', icon: '🙂', template: (team, mode) => (mode === 'battle' ? { type: 'grunt', team } : { type: 'grunt' }) },
+const OBJECT_KINDS: {
+  id: string;
+  icon: string;
+  template: (team: number, mode: LevelData['mode']) => ObjectTemplate;
+}[] = [
+  {
+    id: 'grunt',
+    icon: '🙂',
+    template: (team, mode) => (mode === 'battle' ? { type: 'grunt', team } : { type: 'grunt' }),
+  },
   { id: 'enemy', icon: '😠', template: () => ({ type: 'grunt', ai: 'Chaser', tool: 'CLUB' }) },
   { id: 'pickup', icon: '🎁', template: () => ({ type: 'pickup', item: 'GAUNTLETZ' }) },
   { id: 'fort', icon: '🏰', template: (team, mode) => (mode === 'battle' ? { type: 'fort', team } : { type: 'fort' }) },
@@ -802,11 +915,23 @@ function templateKind(t: ObjectTemplate): string {
   return t.type;
 }
 
-function ItemGrid({ current, pick, items = ALL_ITEMS }: { current?: string; pick: (item: ItemId) => void; items?: readonly ItemId[] }) {
+function ItemGrid({
+  current,
+  pick,
+  items = ALL_ITEMS,
+}: {
+  current?: string;
+  pick: (item: ItemId) => void;
+  items?: readonly ItemId[];
+}) {
   return (
     <div class="item-grid">
       {items.map(item => (
-        <button class={`item-btn ${current === item ? 'active' : ''}`} title={itemName(item)} onClick={() => pick(item)}>
+        <button
+          class={`item-btn ${current === item ? 'active' : ''}`}
+          title={itemName(item)}
+          onClick={() => pick(item)}
+        >
           <ItemImg item={item} size={30} />
         </button>
       ))}
@@ -842,7 +967,19 @@ function Field({ label, children }: { label: string; children: preact.ComponentC
   );
 }
 
-function NumberInput({ value, onChange, min, max, step = 1 }: { value: number; onChange: (v: number) => void; min?: number; max?: number; step?: number }) {
+function NumberInput({
+  value,
+  onChange,
+  min,
+  max,
+  step = 1,
+}: {
+  value: number;
+  onChange: (v: number) => void;
+  min?: number;
+  max?: number;
+  step?: number;
+}) {
   return (
     <input
       type="number"
@@ -906,7 +1043,11 @@ function Inspector({ model, selected }: { model: EditorModel; selected: number |
       <Field label={t('editor.team')}>
         <div class="team-pick">
           {[0, 1, 2, 3].map(n => (
-            <button class={`team-dot ${(value ?? 0) === n ? 'active' : ''}`} style={{ background: hex(TEAM_COLORS[n]!) }} onClick={() => set({ team: n })}>
+            <button
+              class={`team-dot ${(value ?? 0) === n ? 'active' : ''}`}
+              style={{ background: hex(TEAM_COLORS[n]!) }}
+              onClick={() => set({ team: n })}
+            >
               {n + 1}
             </button>
           ))}
@@ -917,7 +1058,10 @@ function Inspector({ model, selected }: { model: EditorModel; selected: number |
     <div class="row">
       <button onClick={() => model.state.set({ tool: 'link' })}>🔗 {t('editor.editLinks')}</button>
       {o.type === 'switch' && (
-        <button onClick={() => set({ targets: [], partners: undefined })} disabled={o.targets.length === 0 && !o.partners?.length}>
+        <button
+          onClick={() => set({ targets: [], partners: undefined })}
+          disabled={o.targets.length === 0 && !o.partners?.length}
+        >
           {t('editor.clearLinks')}
         </button>
       )}
@@ -936,7 +1080,12 @@ function Inspector({ model, selected }: { model: EditorModel; selected: number |
           )}
           {teamSelect(o.team)}
           <Field label={t('editor.tool')}>
-            <Select value={o.tool} options={TOOLS as readonly CombatTool[]} label={itemName} onChange={v => set({ tool: v })} />
+            <Select
+              value={o.tool}
+              options={TOOLS as readonly CombatTool[]}
+              label={itemName}
+              onChange={v => set({ tool: v })}
+            />
           </Field>
           <Field label={t('editor.toy')}>
             <Select value={o.toy} options={TOYS as readonly ToyId[]} label={itemName} onChange={v => set({ toy: v })} />
@@ -962,7 +1111,11 @@ function Inspector({ model, selected }: { model: EditorModel; selected: number |
           </Field>
           <ItemGrid current={o.item} pick={item => set({ item })} />
           <label class="toggle">
-            <input type="checkbox" checked={!!o.hidden} onChange={e => set({ hidden: e.currentTarget.checked || undefined })} />
+            <input
+              type="checkbox"
+              checked={!!o.hidden}
+              onChange={e => set({ hidden: e.currentTarget.checked || undefined })}
+            />
             {t('editor.hidden')}
           </label>
           {(o.item === 'SCROLL' || o.item === 'WAND') && (
@@ -971,7 +1124,12 @@ function Inspector({ model, selected }: { model: EditorModel; selected: number |
             </Field>
           )}
           <Field label={t('editor.respawn')}>
-            <NumberInput value={toSec(o.respawn)} min={0} step={1} onChange={v => set({ respawn: toTicks(v) || undefined })} />
+            <NumberInput
+              value={toSec(o.respawn)}
+              min={0}
+              step={1}
+              onChange={v => set({ respawn: toTicks(v) || undefined })}
+            />
           </Field>
         </>
       );
@@ -986,11 +1144,21 @@ function Inspector({ model, selected }: { model: EditorModel; selected: number |
           </p>
           {linkButtons}
           <Field label={t('editor.delay')}>
-            <NumberInput value={toSec(o.delay)} min={0} step={0.5} onChange={v => set({ delay: toTicks(v) || undefined })} />
+            <NumberInput
+              value={toSec(o.delay)}
+              min={0}
+              step={0.5}
+              onChange={v => set({ delay: toTicks(v) || undefined })}
+            />
           </Field>
           {(kind === 'time' || kind === 'secret' || kind === 'green' || kind === 'blue') && (
             <Field label={t('editor.duration')}>
-              <NumberInput value={toSec(o.duration)} min={0} step={0.5} onChange={v => set({ duration: toTicks(v) || undefined })} />
+              <NumberInput
+                value={toSec(o.duration)}
+                min={0}
+                step={0.5}
+                onChange={v => set({ duration: toTicks(v) || undefined })}
+              />
             </Field>
           )}
           {(kind === 'many' || kind === 'checkpoint') && (
@@ -1000,7 +1168,12 @@ function Inspector({ model, selected }: { model: EditorModel; selected: number |
           )}
           {kind === 'checkpoint' && (
             <Field label={t('editor.requires')}>
-              <Select value={o.requires} options={[...TOOLS, ...TOYS] as ItemId[]} label={itemName} onChange={v => set({ requires: v })} />
+              <Select
+                value={o.requires}
+                options={[...TOOLS, ...TOYS] as ItemId[]}
+                label={itemName}
+                onChange={v => set({ requires: v })}
+              />
             </Field>
           )}
         </>
@@ -1019,13 +1192,21 @@ function Inspector({ model, selected }: { model: EditorModel; selected: number |
           <Field label={t('editor.color')}>
             <div class="row">
               {(['green', 'blue', 'red'] as const).map(c => (
-                <button class={`color-dot ${o.color === c ? 'active' : ''}`} style={{ background: { green: '#4ac04a', blue: '#3a7ad8', red: '#d83a3a' }[c] }} onClick={() => set({ color: c })} />
+                <button
+                  class={`color-dot ${o.color === c ? 'active' : ''}`}
+                  style={{ background: { green: '#4ac04a', blue: '#3a7ad8', red: '#d83a3a' }[c] }}
+                  onClick={() => set({ color: c })}
+                />
               ))}
             </div>
           </Field>
           {o.color === 'red' && (
             <label class="toggle">
-              <input type="checkbox" checked={!!o.open} onChange={e => set({ open: e.currentTarget.checked || undefined })} />
+              <input
+                type="checkbox"
+                checked={!!o.open}
+                onChange={e => set({ open: e.currentTarget.checked || undefined })}
+              />
               {t('editor.open2')}
             </label>
           )}
@@ -1060,10 +1241,20 @@ function Inspector({ model, selected }: { model: EditorModel; selected: number |
             <DirPicker value={o.dir} onChange={d => set({ dir: d })} />
           </Field>
           <Field label={t('editor.rate')}>
-            <NumberInput value={o.rate ?? 12} min={2} max={60} onChange={v => set({ rate: v === 12 ? undefined : v })} />
+            <NumberInput
+              value={o.rate ?? 12}
+              min={2}
+              max={60}
+              onChange={v => set({ rate: v === 12 ? undefined : v })}
+            />
           </Field>
           <Field label={t('editor.every')}>
-            <NumberInput value={toSec(o.every)} min={0} step={0.5} onChange={v => set({ every: toTicks(v) || undefined })} />
+            <NumberInput
+              value={toSec(o.every)}
+              min={0}
+              step={0.5}
+              onChange={v => set({ every: toTicks(v) || undefined })}
+            />
           </Field>
         </>
       );
@@ -1072,10 +1263,18 @@ function Inspector({ model, selected }: { model: EditorModel; selected: number |
       body = (
         <>
           <Field label={t('editor.textEn')}>
-            <textarea rows={4} value={o.text.en} onChange={e => set({ text: { ...o.text, en: e.currentTarget.value } })} />
+            <textarea
+              rows={4}
+              value={o.text.en}
+              onChange={e => set({ text: { ...o.text, en: e.currentTarget.value } })}
+            />
           </Field>
           <Field label={t('editor.textPl')}>
-            <textarea rows={4} value={o.text.pl} onChange={e => set({ text: { ...o.text, pl: e.currentTarget.value } })} />
+            <textarea
+              rows={4}
+              value={o.text.pl}
+              onChange={e => set({ text: { ...o.text, pl: e.currentTarget.value } })}
+            />
           </Field>
         </>
       );
@@ -1086,7 +1285,12 @@ function Inspector({ model, selected }: { model: EditorModel; selected: number |
           <p class="muted">{t('editor.dest', { x: o.wx, y: o.wy })}</p>
           {linkButtons}
           <Field label={t('editor.duration')}>
-            <NumberInput value={Math.round((o.duration ?? 8000) / 100) / 10} min={1} step={1} onChange={v => set({ duration: v === 8 ? undefined : Math.round(v * 1000) })} />
+            <NumberInput
+              value={Math.round((o.duration ?? 8000) / 100) / 10}
+              min={1}
+              step={1}
+              onChange={v => set({ duration: v === 8 ? undefined : Math.round(v * 1000) })}
+            />
           </Field>
         </>
       );
@@ -1101,10 +1305,20 @@ function Inspector({ model, selected }: { model: EditorModel; selected: number |
         <>
           <p class="muted">{t('editor.hazardHint')}</p>
           <Field label={t('editor.delay')}>
-            <NumberInput value={(o.delay ?? 0) / 1000} min={0} step={0.5} onChange={v => set({ delay: Math.round(v * 1000) || undefined })} />
+            <NumberInput
+              value={(o.delay ?? 0) / 1000}
+              min={0}
+              step={0.5}
+              onChange={v => set({ delay: Math.round(v * 1000) || undefined })}
+            />
           </Field>
           <Field label={t('editor.period')}>
-            <NumberInput value={(o.period ?? 2000) / 1000} min={0.5} step={0.5} onChange={v => set({ period: Math.round(v * 1000) })} />
+            <NumberInput
+              value={(o.period ?? 2000) / 1000}
+              min={0.5}
+              step={0.5}
+              onChange={v => set({ period: Math.round(v * 1000) })}
+            />
           </Field>
         </>
       );
@@ -1122,7 +1336,12 @@ function Inspector({ model, selected }: { model: EditorModel; selected: number |
             </div>
           </Field>
           <Field label={t('editor.speedMs')}>
-            <NumberInput value={o.rate ?? 600} min={100} step={50} onChange={v => set({ rate: v === 600 ? undefined : v })} />
+            <NumberInput
+              value={o.rate ?? 600}
+              min={100}
+              step={50}
+              onChange={v => set({ rate: v === 600 ? undefined : v })}
+            />
           </Field>
           <Field label={t('editor.offset')}>
             <NumberInput value={o.offset ?? 0} min={0} max={200} onChange={v => set({ offset: v || undefined })} />
@@ -1137,14 +1356,28 @@ function Inspector({ model, selected }: { model: EditorModel; selected: number |
           <p class="muted">{t('editor.pathPoints', { n: o.points.length })}</p>
           {linkButtons}
           <Field label={t('editor.speedMs')}>
-            <NumberInput value={o.rate ?? 800} min={100} step={50} onChange={v => set({ rate: v === 800 ? undefined : v })} />
+            <NumberInput
+              value={o.rate ?? 800}
+              min={100}
+              step={50}
+              onChange={v => set({ rate: v === 800 ? undefined : v })}
+            />
           </Field>
           <Field label={t('editor.pause')}>
-            <NumberInput value={(o.pause ?? 0) / 1000} min={0} step={0.5} onChange={v => set({ pause: Math.round(v * 1000) || undefined })} />
+            <NumberInput
+              value={(o.pause ?? 0) / 1000}
+              min={0}
+              step={0.5}
+              onChange={v => set({ pause: Math.round(v * 1000) || undefined })}
+            />
           </Field>
           {o.type === 'ufo' && (
             <label class="toggle">
-              <input type="checkbox" checked={o.clockwise !== false} onChange={e => set({ clockwise: e.currentTarget.checked ? undefined : false })} />
+              <input
+                type="checkbox"
+                checked={o.clockwise !== false}
+                onChange={e => set({ clockwise: e.currentTarget.checked ? undefined : false })}
+              />
               {t('editor.clockwise')}
             </label>
           )}
@@ -1158,10 +1391,19 @@ function Inspector({ model, selected }: { model: EditorModel; selected: number |
             <NumberInput value={o.radius} min={1} max={10} onChange={v => set({ radius: v })} />
           </Field>
           <Field label={t('editor.turnMs')}>
-            <NumberInput value={o.rate ?? 3000} min={500} step={250} onChange={v => set({ rate: v === 3000 ? undefined : v })} />
+            <NumberInput
+              value={o.rate ?? 3000}
+              min={500}
+              step={250}
+              onChange={v => set({ rate: v === 3000 ? undefined : v })}
+            />
           </Field>
           <label class="toggle">
-            <input type="checkbox" checked={o.clockwise !== false} onChange={e => set({ clockwise: e.currentTarget.checked ? undefined : false })} />
+            <input
+              type="checkbox"
+              checked={o.clockwise !== false}
+              onChange={e => set({ clockwise: e.currentTarget.checked ? undefined : false })}
+            />
             {t('editor.clockwise')}
           </label>
         </>
@@ -1173,10 +1415,19 @@ function Inspector({ model, selected }: { model: EditorModel; selected: number |
           <p class="muted">{t('editor.slimeHint', { x: o.x1, y: o.y1 })}</p>
           {linkButtons}
           <Field label={t('editor.speedMs')}>
-            <NumberInput value={o.rate ?? 1000} min={100} step={50} onChange={v => set({ rate: v === 1000 ? undefined : v })} />
+            <NumberInput
+              value={o.rate ?? 1000}
+              min={100}
+              step={50}
+              onChange={v => set({ rate: v === 1000 ? undefined : v })}
+            />
           </Field>
           <label class="toggle">
-            <input type="checkbox" checked={o.clockwise !== false} onChange={e => set({ clockwise: e.currentTarget.checked ? undefined : false })} />
+            <input
+              type="checkbox"
+              checked={o.clockwise !== false}
+              onChange={e => set({ clockwise: e.currentTarget.checked ? undefined : false })}
+            />
             {t('editor.clockwise')}
           </label>
         </>
@@ -1186,7 +1437,10 @@ function Inspector({ model, selected }: { model: EditorModel; selected: number |
   return (
     <div class="inspector">
       <h3>
-        {kindLabel} <span class="muted">({o.x}, {o.y})</span>
+        {kindLabel}{' '}
+        <span class="muted">
+          ({o.x}, {o.y})
+        </span>
       </h3>
       {body}
       <button
@@ -1270,10 +1524,7 @@ function LevelPanel({ model }: { model: EditorModel; revision: number }) {
           {ALL_ITEMS.map(i => (
             <option value={i}>{itemName(i)}</option>
           ))}
-          {key === 'resources' &&
-            BRICK_COLORS.map(c => (
-              <option value={c}>{itemName(c)}</option>
-            ))}
+          {key === 'resources' && BRICK_COLORS.map(c => <option value={c}>{itemName(c)}</option>)}
         </select>
       </div>
     );
@@ -1281,7 +1532,17 @@ function LevelPanel({ model }: { model: EditorModel; revision: number }) {
   return (
     <div class="level-panel">
       <Field label={t('editor.id')}>
-        <input value={meta.id} onChange={e => set({ id: e.currentTarget.value.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-') })} />
+        <input
+          value={meta.id}
+          onChange={e =>
+            set({
+              id: e.currentTarget.value
+                .trim()
+                .toLowerCase()
+                .replace(/[^a-z0-9-]/g, '-'),
+            })
+          }
+        />
       </Field>
       <Field label={t('editor.nameEn')}>
         <input value={meta.name.en} onChange={e => set({ name: { ...meta.name, en: e.currentTarget.value } })} />
@@ -1290,7 +1551,15 @@ function LevelPanel({ model }: { model: EditorModel; revision: number }) {
         <input value={meta.name.pl} onChange={e => set({ name: { ...meta.name, pl: e.currentTarget.value } })} />
       </Field>
       <Field label={t('editor.mode')}>
-        <select value={meta.mode} onChange={e => set({ mode: e.currentTarget.value, players: e.currentTarget.value === 'battle' ? (meta.players ?? 2) : undefined })}>
+        <select
+          value={meta.mode}
+          onChange={e =>
+            set({
+              mode: e.currentTarget.value,
+              players: e.currentTarget.value === 'battle' ? (meta.players ?? 2) : undefined,
+            })
+          }
+        >
           <option value="quest">{t('editor.quest')}</option>
           <option value="battle">{t('editor.battle')}</option>
         </select>
@@ -1304,7 +1573,12 @@ function LevelPanel({ model }: { model: EditorModel; revision: number }) {
       </Field>
       {meta.mode === 'battle' ? (
         <Field label={t('editor.players')}>
-          <NumberInput value={meta.players ?? 2} min={2} max={4} onChange={v => set({ players: Math.max(2, Math.min(4, v)) })} />
+          <NumberInput
+            value={meta.players ?? 2}
+            min={2}
+            max={4}
+            onChange={v => set({ players: Math.max(2, Math.min(4, v)) })}
+          />
         </Field>
       ) : (
         <div class="row">
@@ -1318,10 +1592,20 @@ function LevelPanel({ model }: { model: EditorModel; revision: number }) {
       )}
       <div class="row">
         <Field label={t('editor.ovens')}>
-          <NumberInput value={meta.ovens ?? 3} min={0} max={6} onChange={v => set({ ovens: v === 3 ? undefined : v })} />
+          <NumberInput
+            value={meta.ovens ?? 3}
+            min={0}
+            max={6}
+            onChange={v => set({ ovens: v === 3 ? undefined : v })}
+          />
         </Field>
         <Field label={t('editor.autoToggle')}>
-          <NumberInput value={(meta.autoToggleMs ?? 3000) / 1000} min={0.5} step={0.5} onChange={v => set({ autoToggleMs: v === 3 ? undefined : Math.round(v * 1000) })} />
+          <NumberInput
+            value={(meta.autoToggleMs ?? 3000) / 1000}
+            min={0.5}
+            step={0.5}
+            onChange={v => set({ autoToggleMs: v === 3 ? undefined : Math.round(v * 1000) })}
+          />
         </Field>
       </div>
       {meta.mode === 'quest' ? (
@@ -1389,7 +1673,8 @@ function Problems({ model, view }: { model: EditorModel; view: { current: Editor
           class={issue.severity}
           onClick={() => {
             if (issue.object !== undefined) model.state.set({ selected: issue.object });
-            if (issue.x !== undefined && issue.y !== undefined && issue.y >= 0) view.current?.focus({ x: issue.x, y: issue.y });
+            if (issue.x !== undefined && issue.y !== undefined && issue.y >= 0)
+              view.current?.focus({ x: issue.x, y: issue.y });
           }}
         >
           <span class="issue-icon">{issue.severity === 'error' ? '⛔' : '⚠'}</span>
@@ -1406,7 +1691,15 @@ function Problems({ model, view }: { model: EditorModel; view: { current: Editor
   );
 }
 
-function OpenDialog({ close, open, play }: { close: () => void; open: (l: LevelData) => void; play: (l: LevelData) => void }) {
+function OpenDialog({
+  close,
+  open,
+  play,
+}: {
+  close: () => void;
+  open: (l: LevelData) => void;
+  play: (l: LevelData) => void;
+}) {
   const [custom, setCustom] = useState(customLevels);
   const [paste, setPaste] = useState('');
   const [error, setError] = useState('');
@@ -1469,4 +1762,3 @@ function OpenDialog({ close, open, play }: { close: () => void; open: (l: LevelD
     </div>
   );
 }
-

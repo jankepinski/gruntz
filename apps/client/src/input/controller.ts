@@ -32,7 +32,12 @@ export class InputController {
     private client: GameClient,
     private canvas: HTMLCanvasElement,
   ) {
-    const on = <K extends keyof HTMLElementEventMap>(el: HTMLElement | Window, type: K, fn: (e: HTMLElementEventMap[K]) => void, opts?: AddEventListenerOptions) => {
+    const on = <K extends keyof HTMLElementEventMap>(
+      el: HTMLElement | Window,
+      type: K,
+      fn: (e: HTMLElementEventMap[K]) => void,
+      opts?: AddEventListenerOptions,
+    ) => {
       el.addEventListener(type, fn as EventListener, opts);
       this.disposers.push(() => el.removeEventListener(type, fn as EventListener, opts));
     };
@@ -92,7 +97,8 @@ export class InputController {
     this.mouse.x = e.clientX;
     this.mouse.y = e.clientY;
     const rect = this.canvas.getBoundingClientRect();
-    this.mouse.inside = e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom;
+    this.mouse.inside =
+      e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom;
     if (this.middleDown) {
       const rig = this.client.renderer.rig;
       const upp = rig.unitsPerPixel(rect.height);
@@ -103,7 +109,12 @@ export class InputController {
       const dx = e.clientX - this.leftDown.x;
       const dy = e.clientY - this.leftDown.y;
       if (this.dragRect || Math.hypot(dx, dy) > DRAG_THRESHOLD) {
-        this.dragRect = { x0: this.leftDown.x - rect.left, y0: this.leftDown.y - rect.top, x1: e.clientX - rect.left, y1: e.clientY - rect.top };
+        this.dragRect = {
+          x0: this.leftDown.x - rect.left,
+          y0: this.leftDown.y - rect.top,
+          x1: e.clientX - rect.left,
+          y1: e.clientY - rect.top,
+        };
         this.onDragChange?.();
       }
     }
@@ -173,7 +184,13 @@ export class InputController {
       if (this.lastClick.id === grunt.id && now - this.lastClick.at < 350) {
         // Double click: every grunt with the same tool on screen.
         const r = this.client.renderer;
-        const all = r.entities.gruntsInRect(new THREE.Vector2(-1, -1), new THREE.Vector2(1, 1), r.rig.active, w, g => this.mine(g) && g.tool === grunt.tool);
+        const all = r.entities.gruntsInRect(
+          new THREE.Vector2(-1, -1),
+          new THREE.Vector2(1, 1),
+          r.rig.active,
+          w,
+          g => this.mine(g) && g.tool === grunt.tool,
+        );
         this.client.select(all.map(g => g.id));
       } else if (e.shiftKey) {
         const current = this.client.ui.get().selection;
@@ -258,7 +275,10 @@ export class InputController {
         if (this.client.selectedGruntz().length) this.client.setMode({ kind: 'toy' });
         break;
       case 'KeyX': {
-        const ids = this.client.selectedGruntz().filter(g => this.mine(g)).map(g => g.id);
+        const ids = this.client
+          .selectedGruntz()
+          .filter(g => this.mine(g))
+          .map(g => g.id);
         if (ids.length) this.client.send({ type: 'stop', ids });
         break;
       }
@@ -310,7 +330,10 @@ export class InputController {
       case 'Period': {
         // Select idle gruntz.
         const w = this.world;
-        if (w) this.client.select([...w.all('grunt')].filter(g => this.mine(g) && g.action.kind === 'idle' && !g.task).map(g => g.id));
+        if (w)
+          this.client.select(
+            [...w.all('grunt')].filter(g => this.mine(g) && g.action.kind === 'idle' && !g.task).map(g => g.id),
+          );
         break;
       }
     }
@@ -390,7 +413,15 @@ export class InputController {
     this.hoverTarget = hover;
     this.client.renderer.setHover(tile, hover, w);
     this.canvas.style.cursor =
-      hover === 'tool' ? 'crosshair' : hover === 'attack' ? 'crosshair' : hover === 'select' ? 'pointer' : hover === 'invalid' ? 'not-allowed' : 'default';
+      hover === 'tool'
+        ? 'crosshair'
+        : hover === 'attack'
+          ? 'crosshair'
+          : hover === 'select'
+            ? 'pointer'
+            : hover === 'invalid'
+              ? 'not-allowed'
+              : 'default';
   }
 
   private canToolAt(g: Grunt, tile: Point, target: Grunt | null): boolean {

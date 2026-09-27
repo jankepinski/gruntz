@@ -1,4 +1,13 @@
-import { moveTicks, predictPath, TICK_MS, type Command, type EntityId, type Grunt, type Point, type World } from '@gruntz/core';
+import {
+  moveTicks,
+  predictPath,
+  TICK_MS,
+  type Command,
+  type EntityId,
+  type Grunt,
+  type Point,
+  type World,
+} from '@gruntz/core';
 
 interface Prediction {
   path: Point[];

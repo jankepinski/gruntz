@@ -81,7 +81,8 @@ registerTask('hazardEmit', (w, id) => {
   w.fx('hazard', h, h.id);
   const killFrom = msToTicks(info.killTime);
   const killTo = msToTicks(info.time - STATIC_KILL_MS);
-  for (let t = killFrom; t < killTo; t += msToTicks(STATIC_KILL_TICK_MS)) w.schedule(Math.max(1, t), 'hazardKill', h.id, `kill${t}`);
+  for (let t = killFrom; t < killTo; t += msToTicks(STATIC_KILL_TICK_MS))
+    w.schedule(Math.max(1, t), 'hazardKill', h.id, `kill${t}`);
   w.schedule(msToTicks(info.time), 'hazardIdle', h.id, 'cycle');
 });
 
@@ -121,7 +122,7 @@ function dropperSpan(w: World, d: Dropper): number {
 /** A dropper flies across the whole map along its lane, over and over. */
 export function dropperPosition(w: World, d: Dropper, tick: number): Point {
   const span = dropperSpan(w, d);
-  const travelled = (((tick - d.start) / d.rate) % span + span) % span;
+  const travelled = ((((tick - d.start) / d.rate) % span) + span) % span;
   const s = travelled - DROP_ENVELOPE;
   switch (d.dir) {
     case 0:
@@ -137,7 +138,16 @@ export function dropperPosition(w: World, d: Dropper, tick: number): Point {
 
 export function spawnDropper(w: World, dir: Dir, lane: number, rateMs: number, offset: number): void {
   const rate = Math.max(1, msToTicks(rateMs));
-  const d = w.spawn<Dropper>({ kind: 'dropper', x: 0, y: 0, dir, lane, rate, start: w.tick - offset * rate, cooldownUntil: 0 });
+  const d = w.spawn<Dropper>({
+    kind: 'dropper',
+    x: 0,
+    y: 0,
+    dir,
+    lane,
+    rate,
+    start: w.tick - offset * rate,
+    cooldownUntil: 0,
+  });
   w.schedule(1, 'dropperCheck', d.id, 'check');
 }
 
@@ -256,7 +266,14 @@ export function ufoBeams(u: Ufo, tick: number): [Point, Point] {
   ];
 }
 
-export function spawnUfo(w: World, points: Point[], rateMs: number, pauseMs: number, spinMs: number, clockwise: boolean): void {
+export function spawnUfo(
+  w: World,
+  points: Point[],
+  rateMs: number,
+  pauseMs: number,
+  spinMs: number,
+  clockwise: boolean,
+): void {
   const u = w.spawn<Ufo>({
     kind: 'ufo',
     x: points[0]!.x,
@@ -302,8 +319,24 @@ export function spotPosition(s: SpotLight, tick: number): Point {
   return { x: s.x + Math.cos(a) * s.radius, y: s.y + Math.sin(a) * s.radius };
 }
 
-export function spawnSpotLight(w: World, x: number, y: number, radius: number, rateMs: number, clockwise: boolean): void {
-  const s = w.spawn<SpotLight>({ kind: 'spotlight', x, y, radius, rate: Math.max(1, msToTicks(rateMs)), clockwise, start: w.tick, pausedAt: 0 });
+export function spawnSpotLight(
+  w: World,
+  x: number,
+  y: number,
+  radius: number,
+  rateMs: number,
+  clockwise: boolean,
+): void {
+  const s = w.spawn<SpotLight>({
+    kind: 'spotlight',
+    x,
+    y,
+    radius,
+    rate: Math.max(1, msToTicks(rateMs)),
+    clockwise,
+    start: w.tick,
+    pausedAt: 0,
+  });
   w.schedule(1, 'spotCheck', s.id, 'check');
 }
 
@@ -359,7 +392,15 @@ export function slimePosition(s: Slime, tick: number): Point {
   return { x: s.fromX + (s.x - s.fromX) * t, y: s.fromY + (s.y - s.fromY) * t };
 }
 
-export function spawnSlime(w: World, x0: number, y0: number, x1: number, y1: number, clockwise: boolean, rateMs: number): void {
+export function spawnSlime(
+  w: World,
+  x0: number,
+  y0: number,
+  x1: number,
+  y1: number,
+  clockwise: boolean,
+  rateMs: number,
+): void {
   const s = w.spawn<Slime>({
     kind: 'slime',
     x: x0,

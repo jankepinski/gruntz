@@ -27,13 +27,20 @@ export function MenuBackdrop() {
       }
       const r = renderer;
       // The backdrop sits behind blurred panels: skip the costliest extras.
-      r.setGraphics({ ...settings.get().graphics, ao: false, resolution: Math.min(1.5, settings.get().graphics.resolution) });
+      r.setGraphics({
+        ...settings.get().graphics,
+        ao: false,
+        resolution: Math.min(1.5, settings.get().graphics.resolution),
+      });
       const pool = CAMPAIGN.filter(l => (l.world ?? 0) > 0);
       const level = pool[Math.floor(Math.random() * pool.length)] ?? CAMPAIGN[0]!;
       const world = createWorld(level, { seed: 7, teams: [{ team: 0, name: 'P' }] });
       r.load(world);
       // Start over the player's gruntz, then drift around the map.
-      const home = [...world.entities.values()].find((e): e is Grunt => e.kind === 'grunt' && e.team === 0) ?? { x: world.width / 2, y: world.height / 2 };
+      const home = [...world.entities.values()].find((e): e is Grunt => e.kind === 'grunt' && e.team === 0) ?? {
+        x: world.width / 2,
+        y: world.height / 2,
+      };
       const cx = THREE_clamp(home.x + 0.5, 6, world.width - 6);
       const cy = THREE_clamp(home.y + 0.5, 5, world.height - 5);
       r.rig.setZoom(0.22);

@@ -78,7 +78,8 @@ function Lobby({ back, play, name }: { back: () => void; play: (l: GameLaunch) =
                   <b>{r.name}</b>
                   <span class="muted">
                     {' '}
-                    · {levelById(r.levelId) ? localized(levelById(r.levelId)!.name) : r.levelId} · {t('mp.players', { n: r.players, max: r.maxPlayers })}
+                    · {levelById(r.levelId) ? localized(levelById(r.levelId)!.name) : r.levelId} ·{' '}
+                    {t('mp.players', { n: r.players, max: r.maxPlayers })}
                   </span>
                 </div>
                 <button disabled={r.status !== 'lobby'} onClick={() => conn.send({ t: 'joinRoom', code: r.code })}>
@@ -92,7 +93,13 @@ function Lobby({ back, play, name }: { back: () => void; play: (l: GameLaunch) =
           <CreateRoom conn={conn} name={name} />
           <h3>{t('mp.joinByCode')}</h3>
           <div class="row left">
-            <input class="code-input" value={code} maxLength={6} placeholder="ABC123" onInput={e => setCode((e.target as HTMLInputElement).value.toUpperCase())} />
+            <input
+              class="code-input"
+              value={code}
+              maxLength={6}
+              placeholder="ABC123"
+              onInput={e => setCode((e.target as HTMLInputElement).value.toUpperCase())}
+            />
             <button disabled={code.length !== 6} onClick={() => conn.send({ t: 'joinRoom', code })}>
               {t('mp.join')}
             </button>
@@ -132,7 +139,10 @@ function CreateRoom({ conn, name }: { conn: Connection; name: string }) {
           <input type="radio" checked={!isPublic} onChange={() => setPublic(false)} /> {t('mp.private')}
         </label>
       </div>
-      <button class="primary" onClick={() => conn.send({ t: 'createRoom', name: roomName || 'Room', levelId, isPublic })}>
+      <button
+        class="primary"
+        onClick={() => conn.send({ t: 'createRoom', name: roomName || 'Room', levelId, isPublic })}
+      >
         {t('mp.create')}
       </button>
     </div>
@@ -178,7 +188,10 @@ function RoomView({ conn, room, me }: { conn: Connection; room: RoomState; me: s
         <div>
           <h3>{level ? localized(level.name) : room.levelId}</h3>
           {host && room.status === 'lobby' && (
-            <select value={room.levelId} onChange={e => conn.send({ t: 'setLevel', levelId: (e.target as HTMLSelectElement).value })}>
+            <select
+              value={room.levelId}
+              onChange={e => conn.send({ t: 'setLevel', levelId: (e.target as HTMLSelectElement).value })}
+            >
               {BATTLE_LEVELS.map(l => (
                 <option value={l.id}>
                   {localized(l.name)} ({l.players ?? 4})
@@ -198,7 +211,10 @@ function RoomView({ conn, room, me }: { conn: Connection; room: RoomState; me: s
                     </span>
                   </span>
                 ) : host && room.status === 'lobby' ? (
-                  <select value={slot.kind === 'bot' ? (slot.bot ?? 'normal') : slot.kind} onChange={e => setSlot(i, (e.target as HTMLSelectElement).value)}>
+                  <select
+                    value={slot.kind === 'bot' ? (slot.bot ?? 'normal') : slot.kind}
+                    onChange={e => setSlot(i, (e.target as HTMLSelectElement).value)}
+                  >
                     <option value="open">{t('mp.open')}</option>
                     <option value="closed">{t('mp.closed')}</option>
                     <option value="easy">
@@ -212,7 +228,11 @@ function RoomView({ conn, room, me }: { conn: Connection; room: RoomState; me: s
                     </option>
                   </select>
                 ) : (
-                  <span class="muted">{slot.kind === 'bot' ? `${t('menu.bot')} · ${t(`menu.${slot.bot ?? 'normal'}`)}` : t(`mp.${slot.kind === 'closed' ? 'closed' : 'open'}`)}</span>
+                  <span class="muted">
+                    {slot.kind === 'bot'
+                      ? `${t('menu.bot')} · ${t(`menu.${slot.bot ?? 'normal'}`)}`
+                      : t(`mp.${slot.kind === 'closed' ? 'closed' : 'open'}`)}
+                  </span>
                 )}
                 <span class="spacer" />
                 {slot.kind !== 'open' && slot.kind !== 'closed' && (
@@ -221,7 +241,13 @@ function RoomView({ conn, room, me }: { conn: Connection; room: RoomState; me: s
                     <select
                       disabled={!host || room.status !== 'lobby'}
                       value={slot.alliance}
-                      onChange={e => conn.send({ t: 'setAlliance', slot: i, alliance: Number((e.target as HTMLSelectElement).value) })}
+                      onChange={e =>
+                        conn.send({
+                          t: 'setAlliance',
+                          slot: i,
+                          alliance: Number((e.target as HTMLSelectElement).value),
+                        })
+                      }
                     >
                       {[0, 1, 2, 3].map(a => (
                         <option value={a}>{a + 1}</option>
@@ -234,7 +260,10 @@ function RoomView({ conn, room, me }: { conn: Connection; room: RoomState; me: s
           </div>
           <div class="row left">
             {!host && mySlot && room.status === 'lobby' && (
-              <button class={mySlot.ready ? 'active' : ''} onClick={() => conn.send({ t: 'ready', ready: !mySlot.ready })}>
+              <button
+                class={mySlot.ready ? 'active' : ''}
+                onClick={() => conn.send({ t: 'ready', ready: !mySlot.ready })}
+              >
                 {mySlot.ready ? t('mp.ready') : t('mp.notReady')}
               </button>
             )}
@@ -244,7 +273,9 @@ function RoomView({ conn, room, me }: { conn: Connection; room: RoomState; me: s
               </button>
             )}
             {room.status === 'countdown' && room.countdownEnd && (
-              <b class="countdown">{t('mp.countdown', { n: Math.max(0, Math.ceil((room.countdownEnd - Date.now()) / 1000)) })}</b>
+              <b class="countdown">
+                {t('mp.countdown', { n: Math.max(0, Math.ceil((room.countdownEnd - Date.now()) / 1000)) })}
+              </b>
             )}
           </div>
         </div>

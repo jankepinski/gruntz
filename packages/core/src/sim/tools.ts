@@ -87,7 +87,11 @@ export function useTool(w: World, g: Grunt, target: Point): boolean {
       w.schedule(msToTicks(BRICK_DELAY), 'finishBrick', g.id, 'action', target.x, target.y);
       return true;
     case 'GAUNTLETZ':
-      setAction(w, g, 'tool', msToTicks(GAUNTLETZ_DELAY + FINISH_DELAY), { tx: target.x, ty: target.y, item: 'GAUNTLETZ' });
+      setAction(w, g, 'tool', msToTicks(GAUNTLETZ_DELAY + FINISH_DELAY), {
+        tx: target.x,
+        ty: target.y,
+        item: 'GAUNTLETZ',
+      });
       w.schedule(msToTicks(GAUNTLETZ_DELAY), 'gauntletzHit', g.id, 'action', target.x, target.y);
       return true;
     case 'GOOBER': {
@@ -292,7 +296,14 @@ registerTask('placeTimeBomb', (w, id, x: number, y: number) => {
 export function spawnTimeBomb(w: World, x: number, y: number, hidden: boolean): TimeBomb {
   const slow = msToTicks(hidden ? TIMEBOMB_HIDDEN_MS : TIMEBOMB_SLOW_MS);
   const fast = msToTicks(TIMEBOMB_FAST_MS);
-  const bomb = w.spawn<TimeBomb>({ kind: 'timebomb', x, y, start: w.tick, fastAt: w.tick + slow, end: w.tick + slow + fast });
+  const bomb = w.spawn<TimeBomb>({
+    kind: 'timebomb',
+    x,
+    y,
+    start: w.tick,
+    fastAt: w.tick + slow,
+    end: w.tick + slow + fast,
+  });
   w.schedule(slow + fast, 'timeBombExplode', bomb.id, 'boom');
   return bomb;
 }

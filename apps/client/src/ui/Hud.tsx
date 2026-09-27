@@ -27,7 +27,9 @@ export function Hud({ client, onSettings }: { client: GameClient; onSettings?: (
       <FloatingTexts client={client} />
       {ui.connectionProblem && <div class="net-warning">{t('mp.disconnected')}</div>}
       {ui.help && <HelpBox client={client} />}
-      {ui.toast && performance.now() - ui.toast.at < 2500 && <div class="toast">{t(`hud.${ui.toast.key}` as never)}</div>}
+      {ui.toast && performance.now() - ui.toast.at < 2500 && (
+        <div class="toast">{t(`hud.${ui.toast.key}` as never)}</div>
+      )}
       {team && <CurseFx client={client} team={team} world={w} />}
       {ui.alert && performance.now() - ui.alert.at < 4000 && <div class="alert-banner">{t('hud.fortUnderAttack')}</div>}
     </>
@@ -43,7 +45,13 @@ function TeamPanel({ client, team, world }: { client: GameClient; team: TeamStat
       <div class="goo">
         <span class="label">{t('hud.gooWell')}</span>
         <div class="goo-well">
-          <div class="goo-fill" style={{ height: `${Math.min(100, (team.goo / 4) * 100)}%`, background: hex(TEAM_COLORS[team.index] ?? 0x999999) }} />
+          <div
+            class="goo-fill"
+            style={{
+              height: `${Math.min(100, (team.goo / 4) * 100)}%`,
+              background: hex(TEAM_COLORS[team.index] ?? 0x999999),
+            }}
+          />
         </div>
       </div>
       <div class="ovens">
@@ -59,7 +67,13 @@ function TeamPanel({ client, team, world }: { client: GameClient; team: TeamStat
                 title={ready ? t('hud.dropHint') : ''}
                 onClick={() => client.setMode({ kind: 'drop', oven: i })}
               >
-                {ready ? <GruntFace theme={world.theme} team={team.index} size={34} /> : baking ? <Flame size={18} strokeWidth={2} /> : ''}
+                {ready ? (
+                  <GruntFace theme={world.theme} team={team.index} size={34} />
+                ) : baking ? (
+                  <Flame size={18} strokeWidth={2} />
+                ) : (
+                  ''
+                )}
               </button>
             );
           })}
@@ -114,7 +128,17 @@ function TeamPanel({ client, team, world }: { client: GameClient; team: TeamStat
 }
 
 /** Rendered portrait of a grunt in its colours. */
-function GruntFace({ theme, team, ai, size }: { theme: World['theme']; team: number; ai?: string | undefined; size: number }) {
+function GruntFace({
+  theme,
+  team,
+  ai,
+  size,
+}: {
+  theme: World['theme'];
+  team: number;
+  ai?: string | undefined;
+  size: number;
+}) {
   useThumbnails();
   const url = thumbnails.portrait(theme, team, ai);
   return url ? <img class="face-img" src={url} width={size} height={size} alt="" draggable={false} /> : null;
@@ -141,7 +165,11 @@ function TopRight({ client, onSettings }: { client: GameClient; onSettings?: (()
             <button class={`icon-btn ${ui.paused ? 'active' : ''}`} onClick={() => client.togglePause()} title="P">
               {ui.paused ? <Play size={16} strokeWidth={2.2} /> : <Pause size={16} strokeWidth={2.2} />}
             </button>
-            <button class={`icon-btn ${ui.speed >= 2 ? 'active' : ''}`} onClick={() => client.setSpeed(ui.speed >= 2 ? 1 : 2)} title="+/-">
+            <button
+              class={`icon-btn ${ui.speed >= 2 ? 'active' : ''}`}
+              onClick={() => client.setSpeed(ui.speed >= 2 ? 1 : 2)}
+              title="+/-"
+            >
               <FastForward size={16} strokeWidth={2.2} />
               <small>{ui.speed}×</small>
             </button>
@@ -207,7 +235,12 @@ function Minimap({ client }: { client: GameClient }) {
       g.strokeStyle = 'rgba(255,255,255,0.85)';
       g.lineWidth = 1;
       const half = rig.distance * 0.35;
-      g.strokeRect((rig.target.x - half * 1.4) * scale, (rig.target.y - half) * scale, half * 2.8 * scale, half * 2 * scale);
+      g.strokeRect(
+        (rig.target.x - half * 1.4) * scale,
+        (rig.target.y - half) * scale,
+        half * 2.8 * scale,
+        half * 2 * scale,
+      );
     };
     draw();
     return () => cancelAnimationFrame(raf);
@@ -256,7 +289,11 @@ function SelectionPanel({ client, gruntz }: { client: GameClient; gruntz: Grunt[
         <span class="label">{t('hud.selected', { n: gruntz.length })}</span>
         <div class="portraits">
           {gruntz.slice(0, 24).map(gr => (
-            <button class="mini-portrait" style={{ background: hex(gruntColor(gr)) }} onClick={() => client.select([gr.id])}>
+            <button
+              class="mini-portrait"
+              style={{ background: hex(gruntColor(gr)) }}
+              onClick={() => client.select([gr.id])}
+            >
               <span class="mini-hp" style={{ width: `${(gr.health / MAX_HEALTH) * 100}%` }} />
               {gr.tool ? <ItemImg item={gr.tool} size={22} /> : null}
             </button>
@@ -274,15 +311,39 @@ function SelectionPanel({ client, gruntz }: { client: GameClient; gruntz: Grunt[
       </div>
       <div class="info">
         <div class="name">{g.ai ? aiName(g.ai) : `Grunt #${g.id}`}</div>
-        <Bar label={t('hud.health')} value={g.health / MAX_HEALTH} color={g.health > 12 ? '#9edc88' : g.health > 6 ? '#f2d47e' : '#f28a78'} text={`${g.health}/${MAX_HEALTH}`} />
+        <Bar
+          label={t('hud.health')}
+          value={g.health / MAX_HEALTH}
+          color={g.health > 12 ? '#9edc88' : g.health > 6 ? '#f2d47e' : '#f28a78'}
+          text={`${g.health}/${MAX_HEALTH}`}
+        />
         <Bar label={t('hud.stamina')} value={st / 20} color="#9cc8ff" />
         {g.flying && <Bar label="✈" value={g.flight / 20} color="#d0d0d8" />}
         {g.orders.length > 0 && <div class="orders">{t('hud.orders', { n: g.orders.length })}</div>}
       </div>
       <div class="equipment">
-        <EquipSlot label={t('hud.tool')} item={g.tool} empty={t('hud.noTool')} hotkey={mine ? 'T' : undefined} onClick={mine && g.tool ? () => client.setMode({ kind: 'tool' }) : undefined} />
-        <EquipSlot label={t('hud.toy')} item={g.toy} empty={t('hud.noToy')} hotkey={mine ? 'Y' : undefined} onClick={mine && g.toy ? () => client.setMode({ kind: 'toy' }) : undefined} />
-        {g.powerup && <EquipSlot label={t('hud.powerup')} item={g.powerup} empty="" timer={Math.max(0, Math.ceil((g.powerupEnd - w.tick) / 20))} />}
+        <EquipSlot
+          label={t('hud.tool')}
+          item={g.tool}
+          empty={t('hud.noTool')}
+          hotkey={mine ? 'T' : undefined}
+          onClick={mine && g.tool ? () => client.setMode({ kind: 'tool' }) : undefined}
+        />
+        <EquipSlot
+          label={t('hud.toy')}
+          item={g.toy}
+          empty={t('hud.noToy')}
+          hotkey={mine ? 'Y' : undefined}
+          onClick={mine && g.toy ? () => client.setMode({ kind: 'toy' }) : undefined}
+        />
+        {g.powerup && (
+          <EquipSlot
+            label={t('hud.powerup')}
+            item={g.powerup}
+            empty=""
+            timer={Math.max(0, Math.ceil((g.powerupEnd - w.tick) / 20))}
+          />
+        )}
       </div>
     </div>
   );

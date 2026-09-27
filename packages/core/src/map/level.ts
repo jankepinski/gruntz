@@ -4,7 +4,14 @@ import { T, tileDef, tileId } from '../data/tiles.ts';
 import type { Dir } from '../point.ts';
 import { spawnGrunt } from '../sim/grunt.ts';
 import { spawnRollingBall } from '../sim/hazards.ts';
-import { spawnCloud, spawnDropper, spawnSlime, spawnSpotLight, spawnStaticHazard, spawnUfo } from '../sim/worldHazards.ts';
+import {
+  spawnCloud,
+  spawnDropper,
+  spawnSlime,
+  spawnSpotLight,
+  spawnStaticHazard,
+  spawnUfo,
+} from '../sim/worldHazards.ts';
 import type {
   AiType,
   Brickz,
@@ -65,7 +72,16 @@ export type LevelObject =
   /** Bird or plane crossing the map; `lane` is the column (north/south) or row (east/west). */
   | { type: 'dropper'; x: number; y: number; dir: Dir; rate?: number; offset?: number }
   | { type: 'cloud'; x: number; y: number; points: [number, number][]; rate?: number; pause?: number }
-  | { type: 'ufo'; x: number; y: number; points: [number, number][]; rate?: number; pause?: number; spin?: number; clockwise?: boolean }
+  | {
+      type: 'ufo';
+      x: number;
+      y: number;
+      points: [number, number][];
+      rate?: number;
+      pause?: number;
+      spin?: number;
+      clockwise?: boolean;
+    }
   | { type: 'spotlight'; x: number; y: number; radius: number; rate?: number; clockwise?: boolean }
   | { type: 'slime'; x: number; y: number; x1: number; y1: number; clockwise?: boolean; rate?: number }
   | { type: 'help'; x: number; y: number; text: LocalizedText }
@@ -137,7 +153,11 @@ export interface WorldSetup {
   teams: TeamSetup[];
 }
 
-export function parseTiles(level: Pick<LevelData, 'tiles' | 'legend'>): { width: number; height: number; tiles: number[] } {
+export function parseTiles(level: Pick<LevelData, 'tiles' | 'legend'>): {
+  width: number;
+  height: number;
+  tiles: number[];
+} {
   const legend = { ...DEFAULT_LEGEND, ...level.legend };
   const height = level.tiles.length;
   const width = Math.max(...level.tiles.map(r => r.length));
@@ -250,7 +270,16 @@ export function createWorld(level: LevelData, setup: WorldSetup): World {
         break;
       }
       case 'wormhole':
-        w.spawn<Wormhole>({ kind: 'wormhole', x: o.x, y: o.y, color: o.color, tx: o.tx, ty: o.ty, open: o.open ?? o.color !== 'red', closesAt: 0 });
+        w.spawn<Wormhole>({
+          kind: 'wormhole',
+          x: o.x,
+          y: o.y,
+          color: o.color,
+          tx: o.tx,
+          ty: o.ty,
+          open: o.open ?? o.color !== 'red',
+          closesAt: 0,
+        });
         break;
       case 'brickz':
         w.spawn<Brickz>({ kind: 'brickz', x: o.x, y: o.y, layers: o.layers.slice(), team: -1, revealed: [] });
@@ -299,13 +328,27 @@ export function createWorld(level: LevelData, setup: WorldSetup): World {
         w.spawn<HelpBook>({ kind: 'help', x: o.x, y: o.y, en: o.text.en, pl: o.text.pl });
         break;
       case 'secret':
-        w.spawn<SecretTrigger>({ kind: 'trigger', x: o.x, y: o.y, wx: o.wx, wy: o.wy, duration: msToTicks(o.duration ?? 8000), used: false });
+        w.spawn<SecretTrigger>({
+          kind: 'trigger',
+          x: o.x,
+          y: o.y,
+          wx: o.wx,
+          wy: o.wy,
+          duration: msToTicks(o.duration ?? 8000),
+          used: false,
+        });
         break;
     }
   }
   // Toggle bridges go up and down on their own.
   if (w.tiles.some(t => tileDef(t).traits & T.AUTO)) {
-    w.schedule(msToTicks(level.autoToggleMs ?? 3000), 'autoToggle', 0, 'autoToggle', msToTicks(level.autoToggleMs ?? 3000));
+    w.schedule(
+      msToTicks(level.autoToggleMs ?? 3000),
+      'autoToggle',
+      0,
+      'autoToggle',
+      msToTicks(level.autoToggleMs ?? 3000),
+    );
   }
   w.takeChanges();
   return w;

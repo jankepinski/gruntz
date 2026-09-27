@@ -187,13 +187,15 @@ export class EditorModel {
   brushPoints(center: Point, size = this.state.get().brush): Point[] {
     const out: Point[] = [];
     const r0 = -Math.floor((size - 1) / 2);
-    for (let dy = 0; dy < size; dy++) for (let dx = 0; dx < size; dx++) out.push({ x: center.x + r0 + dx, y: center.y + r0 + dy });
+    for (let dy = 0; dy < size; dy++)
+      for (let dx = 0; dx < size; dx++) out.push({ x: center.x + r0 + dx, y: center.y + r0 + dy });
     return out;
   }
 
   rectPoints(a: Point, b: Point): Point[] {
     const out: Point[] = [];
-    for (let y = Math.min(a.y, b.y); y <= Math.max(a.y, b.y); y++) for (let x = Math.min(a.x, b.x); x <= Math.max(a.x, b.x); x++) out.push({ x, y });
+    for (let y = Math.min(a.y, b.y); y <= Math.max(a.y, b.y); y++)
+      for (let x = Math.min(a.x, b.x); x <= Math.max(a.x, b.x); x++) out.push({ x, y });
     return out;
   }
 
@@ -245,7 +247,8 @@ export class EditorModel {
     const hits: number[] = [];
     this.doc.objects.forEach((o, i) => {
       if (o.x === x && o.y === y) hits.push(i);
-      else if ((o.type === 'fort' || o.type === 'giantRock') && Math.abs(o.x - x) <= 1 && Math.abs(o.y - y) <= 1) hits.push(i);
+      else if ((o.type === 'fort' || o.type === 'giantRock') && Math.abs(o.x - x) <= 1 && Math.abs(o.y - y) <= 1)
+        hits.push(i);
     });
     return hits.sort((a, b) => order[this.doc.objects[a]!.type] - order[this.doc.objects[b]!.type]);
   }
@@ -410,10 +413,15 @@ export class EditorModel {
     if (!o) return null;
     const from = { x: o.x, y: o.y };
     if (o.type === 'switch')
-      return { from, targets: o.targets.map(([x, y]) => ({ x, y })), partners: (o.partners ?? []).map(([x, y]) => ({ x, y })) };
+      return {
+        from,
+        targets: o.targets.map(([x, y]) => ({ x, y })),
+        partners: (o.partners ?? []).map(([x, y]) => ({ x, y })),
+      };
     if (o.type === 'wormhole') return { from, targets: [{ x: o.tx, y: o.ty }], partners: [] };
     if (o.type === 'secret') return { from, targets: [{ x: o.wx, y: o.wy }], partners: [] };
-    if (o.type === 'cloud' || o.type === 'ufo') return { from, targets: o.points.map(([x, y]) => ({ x, y })), partners: [] };
+    if (o.type === 'cloud' || o.type === 'ufo')
+      return { from, targets: o.points.map(([x, y]) => ({ x, y })), partners: [] };
     if (o.type === 'slime')
       return {
         from,

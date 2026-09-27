@@ -76,10 +76,13 @@ describe('tools', () => {
   });
 
   it('timebombs blow up everything in 3x3 after 4 s', () => {
-    const w = world(['.....', '.R...'], [
-      { type: 'grunt', x: 0, y: 0, tool: 'TIMEBOMB' },
-      { type: 'grunt', x: 3, y: 1, ai: 'PostGuard' },
-    ]);
+    const w = world(
+      ['.....', '.R...'],
+      [
+        { type: 'grunt', x: 0, y: 0, tool: 'TIMEBOMB' },
+        { type: 'grunt', x: 3, y: 1, ai: 'PostGuard' },
+      ],
+    );
     const [g] = grunts(w, 0);
     cmd(w, 0, { type: 'useTool', ids: [g!.id], x: 1, y: 0 });
     runUntil(w, () => [...w.all('timebomb')].length === 1);
@@ -90,13 +93,16 @@ describe('tools', () => {
   });
 
   it('goober straw sucks puddles into the goo well and bakes a grunt', () => {
-    const w = world(['......'], [
-      { type: 'grunt', x: 0, y: 0, tool: 'GOOBER' },
-      { type: 'puddle', x: 1, y: 0 },
-      { type: 'puddle', x: 2, y: 0 },
-      { type: 'puddle', x: 3, y: 0 },
-      { type: 'puddle', x: 4, y: 0 },
-    ]);
+    const w = world(
+      ['......'],
+      [
+        { type: 'grunt', x: 0, y: 0, tool: 'GOOBER' },
+        { type: 'puddle', x: 1, y: 0 },
+        { type: 'puddle', x: 2, y: 0 },
+        { type: 'puddle', x: 3, y: 0 },
+        { type: 'puddle', x: 4, y: 0 },
+      ],
+    );
     const [g] = grunts(w);
     for (let x = 1; x <= 4; x++) {
       cmd(w, 0, { type: 'useTool', ids: [g!.id], x, y: 0, queue: true });
@@ -109,10 +115,13 @@ describe('tools', () => {
 
 describe('combat', () => {
   it('a sword grunt kills a bare handed enemy and leaves a goo puddle', () => {
-    const w = world(['....'], [
-      { type: 'grunt', x: 0, y: 0, tool: 'SWORD' },
-      { type: 'grunt', x: 2, y: 0, ai: 'PostGuard' },
-    ]);
+    const w = world(
+      ['....'],
+      [
+        { type: 'grunt', x: 0, y: 0, tool: 'SWORD' },
+        { type: 'grunt', x: 2, y: 0, ai: 'PostGuard' },
+      ],
+    );
     const [me] = grunts(w, 0);
     const [enemy] = grunts(w, 4);
     cmd(w, 0, { type: 'attack', ids: [me!.id], target: enemy!.id });
@@ -122,10 +131,13 @@ describe('combat', () => {
   });
 
   it('shield halves melee damage', () => {
-    const w = world(['...'], [
-      { type: 'grunt', x: 0, y: 0, tool: 'SHIELD' },
-      { type: 'grunt', x: 1, y: 0, tool: 'SWORD', ai: 'Chaser' },
-    ]);
+    const w = world(
+      ['...'],
+      [
+        { type: 'grunt', x: 0, y: 0, tool: 'SHIELD' },
+        { type: 'grunt', x: 1, y: 0, tool: 'SWORD', ai: 'Chaser' },
+      ],
+    );
     const [me] = grunts(w, 0);
     runUntil(w, () => me!.health < 20, 400);
     expect(me!.health).toBe(15);
@@ -144,10 +156,13 @@ describe('combat', () => {
 
 describe('switches', () => {
   it('green toggle switch lowers green pyramids', () => {
-    const w = world(['.g.G.'], [
-      { type: 'grunt', x: 0, y: 0 },
-      { type: 'switch', x: 1, y: 0, targets: [[3, 0]] },
-    ]);
+    const w = world(
+      ['.g.G.'],
+      [
+        { type: 'grunt', x: 0, y: 0 },
+        { type: 'switch', x: 1, y: 0, targets: [[3, 0]] },
+      ],
+    );
     const [g] = grunts(w);
     cmd(w, 0, { type: 'move', ids: [g!.id], x: 1, y: 0 });
     runUntil(w, () => w.tileAt(3, 0) === tileId('PYRAMID_GREEN_LO'));
@@ -156,11 +171,14 @@ describe('switches', () => {
   });
 
   it('a pyramid rising under a grunt kills it', () => {
-    const w = world(['.gh'], [
-      { type: 'grunt', x: 2, y: 0 },
-      { type: 'grunt', x: 0, y: 0 },
-      { type: 'switch', x: 1, y: 0, targets: [[2, 0]] },
-    ]);
+    const w = world(
+      ['.gh'],
+      [
+        { type: 'grunt', x: 2, y: 0 },
+        { type: 'grunt', x: 0, y: 0 },
+        { type: 'switch', x: 1, y: 0, targets: [[2, 0]] },
+      ],
+    );
     const [onPyramid, presser] = grunts(w);
     cmd(w, 0, { type: 'move', ids: [presser!.id], x: 1, y: 0 });
     runUntil(w, () => onPyramid!.action.kind === 'death');
@@ -170,11 +188,14 @@ describe('switches', () => {
 
 describe('quest', () => {
   it('bringing the warpstone to the fort wins the level', () => {
-    const w = world(['.....', '.....', '.....'], [
-      { type: 'grunt', x: 0, y: 1 },
-      { type: 'pickup', x: 1, y: 1, item: 'WARPSTONE' },
-      { type: 'fort', x: 3, y: 1 },
-    ]);
+    const w = world(
+      ['.....', '.....', '.....'],
+      [
+        { type: 'grunt', x: 0, y: 1 },
+        { type: 'pickup', x: 1, y: 1, item: 'WARPSTONE' },
+        { type: 'fort', x: 3, y: 1 },
+      ],
+    );
     const [g] = grunts(w);
     cmd(w, 0, { type: 'move', ids: [g!.id], x: 2, y: 1 });
     runUntil(w, () => w.team(0)!.won, 400);
@@ -224,21 +245,42 @@ describe('world hazards', () => {
   const field = (n = 7) => Array.from({ length: n }, () => '.'.repeat(n));
 
   it('a lava geyser kills a grunt standing on it when it goes off', () => {
-    const w = world(field(), [{ type: 'grunt', x: 3, y: 3 }, { type: 'hazard', x: 3, y: 3, delay: 500, period: 2000 }], { theme: 'tropics' });
+    const w = world(
+      field(),
+      [
+        { type: 'grunt', x: 3, y: 3 },
+        { type: 'hazard', x: 3, y: 3, delay: 500, period: 2000 },
+      ],
+      { theme: 'tropics' },
+    );
     const [g] = grunts(w);
     runUntil(w, () => g!.action.kind === 'death', 200);
     expect(g!.action.item).toBe('EXPLODE');
   });
 
   it('a static hazard leaves neighbours alone', () => {
-    const w = world(field(), [{ type: 'grunt', x: 4, y: 3 }, { type: 'hazard', x: 3, y: 3, period: 500 }], { theme: 'tropics' });
+    const w = world(
+      field(),
+      [
+        { type: 'grunt', x: 4, y: 3 },
+        { type: 'hazard', x: 3, y: 3, period: 500 },
+      ],
+      { theme: 'tropics' },
+    );
     const [g] = grunts(w);
     run(w, 200);
     expect(g!.action.kind).not.toBe('death');
   });
 
   it('a bird drops something on a grunt; standing still gets you squashed', () => {
-    const w = world(field(9), [{ type: 'grunt', x: 4, y: 4 }, { type: 'dropper', x: 4, y: 0, dir: 4, rate: 200 }], { theme: 'tropics' });
+    const w = world(
+      field(9),
+      [
+        { type: 'grunt', x: 4, y: 4 },
+        { type: 'dropper', x: 4, y: 0, dir: 4, rate: 200 },
+      ],
+      { theme: 'tropics' },
+    );
     const [g] = grunts(w);
     runUntil(w, () => [...w.all('poop')].length > 0, 400);
     runUntil(w, () => g!.action.kind === 'death', 60);
@@ -246,7 +288,14 @@ describe('world hazards', () => {
   });
 
   it('walking away from the drop saves you', () => {
-    const w = world(field(9), [{ type: 'grunt', x: 4, y: 4 }, { type: 'dropper', x: 4, y: 0, dir: 4, rate: 200 }], { theme: 'tropics' });
+    const w = world(
+      field(9),
+      [
+        { type: 'grunt', x: 4, y: 4 },
+        { type: 'dropper', x: 4, y: 0, dir: 4, rate: 200 },
+      ],
+      { theme: 'tropics' },
+    );
     const [g] = grunts(w);
     runUntil(w, () => [...w.all('poop')].length > 0, 400);
     cmd(w, 0, { type: 'move', ids: [g!.id], x: 7, y: 4 });
@@ -255,14 +304,28 @@ describe('world hazards', () => {
   });
 
   it('a storm cloud zaps gruntz on its path', () => {
-    const w = world(field(9), [{ type: 'grunt', x: 6, y: 2 }, { type: 'cloud', x: 1, y: 2, points: [[7, 2]], rate: 200 }], { theme: 'ice' });
+    const w = world(
+      field(9),
+      [
+        { type: 'grunt', x: 6, y: 2 },
+        { type: 'cloud', x: 1, y: 2, points: [[7, 2]], rate: 200 },
+      ],
+      { theme: 'ice' },
+    );
     const [g] = grunts(w);
     runUntil(w, () => g!.action.kind === 'death', 200);
     expect(g!.action.item).toBe('ELECTROCUTE');
   });
 
   it('a spotlight makes a grunt sing and waits for the song to end', () => {
-    const w = world(field(9), [{ type: 'grunt', x: 6, y: 4 }, { type: 'spotlight', x: 4, y: 4, radius: 2, rate: 1000 }], { theme: 'rollerz' });
+    const w = world(
+      field(9),
+      [
+        { type: 'grunt', x: 6, y: 4 },
+        { type: 'spotlight', x: 4, y: 4, radius: 2, rate: 1000 },
+      ],
+      { theme: 'rollerz' },
+    );
     const [g] = grunts(w);
     runUntil(w, () => g!.action.kind === 'death', 200);
     expect(g!.action.item).toBe('KARAOKE');
@@ -271,7 +334,14 @@ describe('world hazards', () => {
   });
 
   it('kitchen slime creeps around its rectangle and melts gruntz', () => {
-    const w = world(field(9), [{ type: 'grunt', x: 5, y: 1 }, { type: 'slime', x: 1, y: 1, x1: 5, y1: 5, rate: 200 }], { theme: 'shrunk' });
+    const w = world(
+      field(9),
+      [
+        { type: 'grunt', x: 5, y: 1 },
+        { type: 'slime', x: 1, y: 1, x1: 5, y1: 5, rate: 200 },
+      ],
+      { theme: 'shrunk' },
+    );
     const [g] = grunts(w);
     const s = [...w.all('slime')][0]!;
     run(w, 10);
@@ -281,7 +351,14 @@ describe('world hazards', () => {
   });
 
   it('UFO beams melt gruntz near it', () => {
-    const w = world(field(9), [{ type: 'grunt', x: 6, y: 4 }, { type: 'ufo', x: 4, y: 4, points: [], spin: 500 }], { theme: 'space' });
+    const w = world(
+      field(9),
+      [
+        { type: 'grunt', x: 6, y: 4 },
+        { type: 'ufo', x: 4, y: 4, points: [], spin: 500 },
+      ],
+      { theme: 'space' },
+    );
     const [g] = grunts(w);
     runUntil(w, () => g!.action.kind === 'death', 400);
     expect(g!.action.item).toBe('MELT');
@@ -308,7 +385,14 @@ describe('springz', () => {
 
 describe('world hazards and powerups', () => {
   it('an invulnerable grunt walks through an erupting geyser', () => {
-    const w = world(['.......'], [{ type: 'grunt', x: 3, y: 0 }, { type: 'hazard', x: 3, y: 0, delay: 200, period: 500 }], { theme: 'tropics' });
+    const w = world(
+      ['.......'],
+      [
+        { type: 'grunt', x: 3, y: 0 },
+        { type: 'hazard', x: 3, y: 0, delay: 200, period: 500 },
+      ],
+      { theme: 'tropics' },
+    );
     const [g] = grunts(w);
     w.edit(g!, { powerup: 'INVULNERABILITY', powerupEnd: 10_000 });
     run(w, 200);

@@ -158,7 +158,8 @@ const ITEMS: Record<string, ItemBuilder> = {
     const glove = mesh(new THREE.SphereGeometry(0.11, 12, 10), mat(0x9098a8, 0.4, 0.6));
     glove.scale.set(1, 0.8, 1.2);
     g.add(glove);
-    for (let i = -1; i <= 1; i++) g.add(mesh(new THREE.SphereGeometry(0.035, 8, 6), mat(0x707888, 0.4, 0.6), i * 0.05, 0.05, 0.09));
+    for (let i = -1; i <= 1; i++)
+      g.add(mesh(new THREE.SphereGeometry(0.035, 8, 6), mat(0x707888, 0.4, 0.6), i * 0.05, 0.05, 0.09));
     return g;
   },
   SHOVEL: () => {
@@ -281,7 +282,12 @@ const ITEMS: Record<string, ItemBuilder> = {
   GOKART: () => {
     const g = new THREE.Group();
     g.add(mesh(new THREE.BoxGeometry(0.3, 0.08, 0.4), mat(0xe03a2a, 0.5)));
-    for (const [x, z] of [[-0.16, -0.14], [0.16, -0.14], [-0.16, 0.14], [0.16, 0.14]]) {
+    for (const [x, z] of [
+      [-0.16, -0.14],
+      [0.16, -0.14],
+      [-0.16, 0.14],
+      [0.16, 0.14],
+    ]) {
       const wheel = mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.04, 10), mat(0x202020), x!, -0.04, z!);
       wheel.rotation.z = Math.PI / 2;
       g.add(wheel);

@@ -18,7 +18,13 @@ export function level(tiles: string[], objects: LevelObject[] = [], extra: Parti
 
 export function world(tiles: string[], objects: LevelObject[] = [], extra: Partial<LevelData> = {}): World {
   const lvl = level(tiles, objects, extra);
-  const w = createWorld(lvl, { seed: 42, teams: [{ team: 0, name: 'P1' }, { team: 1, name: 'P2' }] });
+  const w = createWorld(lvl, {
+    seed: 42,
+    teams: [
+      { team: 0, name: 'P1' },
+      { team: 1, name: 'P2' },
+    ],
+  });
   if (lvl.mode === 'quest') w.rules = questRules(0);
   return w;
 }

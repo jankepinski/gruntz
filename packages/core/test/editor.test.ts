@@ -24,7 +24,10 @@ describe('level editor helpers', () => {
   it('resize shifts objects and their links', () => {
     const level = blankLevel('quest', 10, 8);
     const grid = levelToGrid(level);
-    const objects = [...level.objects, { type: 'switch' as const, x: 2, y: 2, targets: [[5, 5] as [number, number], [9, 7] as [number, number]] }];
+    const objects = [
+      ...level.objects,
+      { type: 'switch' as const, x: 2, y: 2, targets: [[5, 5] as [number, number], [9, 7] as [number, number]] },
+    ];
     const { grid: g2, objects: o2 } = resizeLevel(grid, objects, 12, 8, 2, 0);
     expect(g2[0]!.length).toBe(12);
     const sw = o2.find(o => o.type === 'switch')!;
@@ -44,7 +47,9 @@ describe('level editor helpers', () => {
   });
 
   it('flood fill stays inside a region', () => {
-    const grid = [0, 1, 2, 3, 4].map(y => [0, 1, 2, 3, 4, 5].map(x => (x === 0 || y === 0 || x === 5 || y === 4 ? 'CLIFF' : 'GROUND')));
+    const grid = [0, 1, 2, 3, 4].map(y =>
+      [0, 1, 2, 3, 4, 5].map(x => (x === 0 || y === 0 || x === 5 || y === 4 ? 'CLIFF' : 'GROUND')),
+    );
     expect(floodRegion(grid, { x: 2, y: 2 }).length).toBe(4 * 3);
     expect(floodRegion(grid, { x: 0, y: 0 }).length).toBe(6 * 5 - 4 * 3);
   });
@@ -53,15 +58,25 @@ describe('level editor helpers', () => {
     for (const mode of ['quest', 'battle'] as const) {
       const level = blankLevel(mode);
       expect(validateLevel(level), mode).toEqual([]);
-      expect(() => createWorld(level, { seed: 1, teams: [{ team: 0, name: 'a' }, { team: 1, name: 'b' }] })).not.toThrow();
+      expect(() =>
+        createWorld(level, {
+          seed: 1,
+          teams: [
+            { team: 0, name: 'a' },
+            { team: 1, name: 'b' },
+          ],
+        }),
+      ).not.toThrow();
     }
   });
 
   it('reports the obvious mistakes', () => {
     const level = blankLevel('quest', 10, 8);
-    level.objects = [{ type: 'grunt', x: 0, y: 0 }, { type: 'switch', x: 3, y: 3, targets: [] }];
+    level.objects = [
+      { type: 'grunt', x: 0, y: 0 },
+      { type: 'switch', x: 3, y: 3, targets: [] },
+    ];
     const codes = validateLevel(level).map(i => i.code);
     expect(codes).toEqual(expect.arrayContaining(['gruntInWall', 'noWarpstone', 'noFort', 'switchNotOnSwitch']));
   });
 });
-

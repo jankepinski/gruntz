@@ -108,7 +108,10 @@ export class GameClient {
     this.fallbackTimer = window.setInterval(() => {
       if (performance.now() - this.lastFrameAt > 250) this.frame(performance.now(), true);
     }, 100);
-    this.pingTimer = window.setInterval(() => this.transport.send({ t: 'ping', c: performance.timeOrigin + performance.now() }), 2000);
+    this.pingTimer = window.setInterval(
+      () => this.transport.send({ t: 'ping', c: performance.timeOrigin + performance.now() }),
+      2000,
+    );
     this.applySettings();
     settings.subscribe(() => this.applySettings());
   }
@@ -211,7 +214,8 @@ export class GameClient {
     const mine = fx.id !== undefined && this.world?.get(fx.id, 'grunt')?.team === this.ui.get().team;
     this.renderer.effects.handle(fx, mine);
     this.fxSound(fx, mine);
-    if (fx.type === 'death' || fx.type === 'explosion' || fx.type === 'fortCaptured') this.lastEventAt = { x: fx.x, y: fx.y };
+    if (fx.type === 'death' || fx.type === 'explosion' || fx.type === 'fortCaptured')
+      this.lastEventAt = { x: fx.x, y: fx.y };
     if (fx.type === 'help' && fx.data === this.ui.get().team && fx.id !== undefined) {
       const book = this.world?.get(fx.id, 'help');
       if (book) this.ui.set({ help: { en: book.en, pl: book.pl } });
@@ -257,7 +261,15 @@ export class GameClient {
         break;
       case 'pickup': {
         const item = String(fx.data ?? '');
-        at(item === 'COIN' || item.startsWith('SECRET') ? 'coin' : ['GHOST', 'SUPERSPEED', 'INVULNERABILITY', 'CONVERSION', 'DEATHTOUCH', 'ROIDZ', 'REACTIVEARMOR'].includes(item) ? 'powerup' : 'pickup');
+        at(
+          item === 'COIN' || item.startsWith('SECRET')
+            ? 'coin'
+            : ['GHOST', 'SUPERSPEED', 'INVULNERABILITY', 'CONVERSION', 'DEATHTOUCH', 'ROIDZ', 'REACTIVEARMOR'].includes(
+                  item,
+                )
+              ? 'powerup'
+              : 'pickup',
+        );
         if (mine && fx.id !== undefined) audio.voice(fx.id, 'happy', 0, 0.7);
         break;
       }
@@ -296,7 +308,18 @@ export class GameClient {
         break;
       case 'hazard': {
         const theme = this.world?.theme;
-        at(theme === 'sweetz' ? 'flare' : theme === 'rollerz' ? 'trapdoor' : theme === 'shrunk' ? 'zap' : theme === 'minis' ? 'explosion' : 'geyser', 0.8);
+        at(
+          theme === 'sweetz'
+            ? 'flare'
+            : theme === 'rollerz'
+              ? 'trapdoor'
+              : theme === 'shrunk'
+                ? 'zap'
+                : theme === 'minis'
+                  ? 'explosion'
+                  : 'geyser',
+          0.8,
+        );
         break;
       }
       case 'drop':
@@ -316,7 +339,14 @@ export class GameClient {
   send(cmd: Command): void {
     if (this.world) {
       const ui = this.ui.get();
-      this.predictor.onCommand(this.world, ui.team, cmd, this.clock.serverTick, Math.max(ui.ping, 50), settings.get().safePath);
+      this.predictor.onCommand(
+        this.world,
+        ui.team,
+        cmd,
+        this.clock.serverTick,
+        Math.max(ui.ping, 50),
+        settings.get().safePath,
+      );
     }
     this.transport.send({ t: 'cmd', seq: this.seq++, c: cmd });
     // A quick "yes boss!" from the first grunt that got the order.
@@ -471,7 +501,10 @@ export class GameClient {
     this.perfFrames++;
     this.perfWork += performance.now() - workStart;
     if (now - this.perfSince >= 500) {
-      this.perf.set({ fps: Math.round((this.perfFrames * 1000) / (now - this.perfSince)), ms: this.perfWork / this.perfFrames });
+      this.perf.set({
+        fps: Math.round((this.perfFrames * 1000) / (now - this.perfSince)),
+        ms: this.perfWork / this.perfFrames,
+      });
       this.perfFrames = 0;
       this.perfWork = 0;
       this.perfSince = now;

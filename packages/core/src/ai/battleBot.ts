@@ -54,7 +54,9 @@ export class BattleBot implements Bot {
     if (!team || team.lost || team.won) return [];
     const out: Command[] = [];
     const mine = [...w.all('grunt')].filter(g => g.team === this.team && !isGone(g));
-    const enemies = [...w.all('grunt')].filter(g => w.alliance(g.team) !== w.alliance(this.team) && !isGone(g) && g.powerup !== 'GHOST');
+    const enemies = [...w.all('grunt')].filter(
+      g => w.alliance(g.team) !== w.alliance(this.team) && !isGone(g) && g.powerup !== 'GHOST',
+    );
     const myFort = [...w.all('fort')].find(f => f.team === this.team);
     const enemyForts = [...w.all('fort')].filter(f => !f.captured && w.alliance(f.team) !== w.alliance(this.team));
 
@@ -93,7 +95,11 @@ export class BattleBot implements Bot {
       if (busy && w.tick - (this.lastOrder.get(g.id) ?? -999) < 120) continue;
 
       if (g.tool === 'GOOBER') {
-        const puddle = this.nearest(g, [...w.all('puddle')].filter(p => p.sucking < 0), 20);
+        const puddle = this.nearest(
+          g,
+          [...w.all('puddle')].filter(p => p.sucking < 0),
+          20,
+        );
         if (puddle) {
           this.order(w, out, g, { type: 'useTool', ids: [g.id], x: puddle.x, y: puddle.y });
           continue;

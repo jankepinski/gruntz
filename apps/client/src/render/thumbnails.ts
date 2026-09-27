@@ -123,7 +123,12 @@ class Thumbnails {
   /** A 5x5 patch of plain ground with something in the middle (liquids get a pool around them). */
   private world(theme: ThemeId, centre: string, objects: LevelObject[] = []): World {
     // BRIDGE* tiles span water, DBRIDGE* tiles span the abyss.
-    const pool = centre.startsWith('WATER') || centre.startsWith('BRIDGE') ? 'WATER' : centre.startsWith('DEATH') || centre.startsWith('DBRIDGE') ? 'DEATH' : null;
+    const pool =
+      centre.startsWith('WATER') || centre.startsWith('BRIDGE')
+        ? 'WATER'
+        : centre.startsWith('DEATH') || centre.startsWith('DBRIDGE')
+          ? 'DEATH'
+          : null;
     const level: LevelData = {
       id: 'thumb',
       name: { en: '', pl: '' },
@@ -140,7 +145,11 @@ class Thumbnails {
     const el = THREE.MathUtils.degToRad(elevation);
     const az = THREE.MathUtils.degToRad(azimuth);
     const dist = radius / Math.tan(THREE.MathUtils.degToRad(r.camera.fov / 2));
-    r.camera.position.set(target.x + Math.sin(az) * Math.cos(el) * dist, target.y + Math.sin(el) * dist, target.z + Math.cos(az) * Math.cos(el) * dist);
+    r.camera.position.set(
+      target.x + Math.sin(az) * Math.cos(el) * dist,
+      target.y + Math.sin(el) * dist,
+      target.z + Math.cos(az) * Math.cos(el) * dist,
+    );
     r.camera.lookAt(target);
     r.camera.near = dist * 0.1;
     r.camera.far = dist * 10;

@@ -78,7 +78,11 @@ export class Effects {
       mesh.scale.setScalar(size * (0.6 + Math.random() * 0.8));
       const a = Math.random() * Math.PI * 2;
       const up = 0.4 + Math.random();
-      const vel = new THREE.Vector3(Math.cos(a) * speed * Math.random(), up * speed, Math.sin(a) * speed * Math.random());
+      const vel = new THREE.Vector3(
+        Math.cos(a) * speed * Math.random(),
+        up * speed,
+        Math.sin(a) * speed * Math.random(),
+      );
       this.group.add(mesh);
       const life = 0.5 + Math.random() * 0.5;
       this.particles.push({ mesh, vel, life, maxLife: life, gravity, grow: 0 });
@@ -88,7 +92,13 @@ export class Effects {
   pulse(x: number, z: number, color: number, radius: number, life = 0.6, y = 0.05): void {
     const mesh = new THREE.Mesh(
       this.ringGeo,
-      new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.8, depthWrite: false, side: THREE.DoubleSide }),
+      new THREE.MeshBasicMaterial({
+        color,
+        transparent: true,
+        opacity: 0.8,
+        depthWrite: false,
+        side: THREE.DoubleSide,
+      }),
     );
     mesh.rotation.x = -Math.PI / 2;
     mesh.position.set(x, y, z);

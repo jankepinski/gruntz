@@ -304,7 +304,14 @@ registerTask('projectileImpact', (w, id) => {
   w.cancel(p.id, 'fly');
   if (p.type === 'BOOMERANG') {
     const owner = w.get(p.owner, 'grunt');
-    if (owner && owner.x === p.fromX && owner.y === p.fromY && owner.tool === null && !isGone(owner) && owner.action.kind !== 'play') {
+    if (
+      owner &&
+      owner.x === p.fromX &&
+      owner.y === p.fromY &&
+      owner.tool === null &&
+      !isGone(owner) &&
+      owner.action.kind !== 'play'
+    ) {
       w.edit(owner, { tool: 'BOOMERANG' });
     }
     w.destroy(p);

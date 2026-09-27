@@ -85,7 +85,10 @@ export class GameRenderer {
       new THREE.Vector3(0.47, 0, 0.47),
       new THREE.Vector3(-0.47, 0, 0.47),
     ]);
-    this.hover = new THREE.LineLoop(hoverGeo, new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.8, depthTest: false }));
+    this.hover = new THREE.LineLoop(
+      hoverGeo,
+      new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.8, depthTest: false }),
+    );
     this.hover.renderOrder = 5;
     this.scene.add(this.hover);
 
@@ -101,7 +104,13 @@ export class GameRenderer {
 
     this.linkLines = new THREE.LineSegments(
       new THREE.BufferGeometry(),
-      new THREE.LineDashedMaterial({ color: 0xffffff, dashSize: 0.2, gapSize: 0.12, depthTest: false, transparent: true }),
+      new THREE.LineDashedMaterial({
+        color: 0xffffff,
+        dashSize: 0.2,
+        gapSize: 0.12,
+        depthTest: false,
+        transparent: true,
+      }),
     );
     this.linkLines.renderOrder = 6;
     this.scene.add(this.linkLines);
@@ -190,7 +199,10 @@ export class GameRenderer {
 
   toNdc(clientX: number, clientY: number): THREE.Vector2 {
     const rect = this.canvas.getBoundingClientRect();
-    return new THREE.Vector2(((clientX - rect.left) / rect.width) * 2 - 1, -((clientY - rect.top) / rect.height) * 2 + 1);
+    return new THREE.Vector2(
+      ((clientX - rect.left) / rect.width) * 2 - 1,
+      -((clientY - rect.top) / rect.height) * 2 + 1,
+    );
   }
 
   /**
@@ -301,7 +313,13 @@ export class GameRenderer {
 }
 
 /** Pre-filtered environment from a simple sky dome: zenith, horizon haze, ground bounce and a sun glow. */
-function skyEnvironment(renderer: THREE.WebGLRenderer, zenith: number, horizon: number, ground: number, sun: number): THREE.Texture {
+function skyEnvironment(
+  renderer: THREE.WebGLRenderer,
+  zenith: number,
+  horizon: number,
+  ground: number,
+  sun: number,
+): THREE.Texture {
   const scene = new THREE.Scene();
   const material = new THREE.ShaderMaterial({
     side: THREE.BackSide,

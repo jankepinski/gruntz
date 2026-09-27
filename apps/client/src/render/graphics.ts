@@ -28,9 +28,36 @@ export interface Graphics {
 export type GraphicsLook = Omit<Graphics, 'preset' | 'fps'>;
 
 export const GRAPHICS_PRESETS: Record<Exclude<GraphicsPreset, 'custom'>, GraphicsLook> = {
-  low: { resolution: 0.5, shadows: 'off', ao: false, bloom: false, antialias: false, grading: false, grass: 'off', scenery: 'reduced' },
-  medium: { resolution: 0.75, shadows: 'low', ao: false, bloom: true, antialias: true, grading: true, grass: 'velvet', scenery: 'full' },
-  high: { resolution: 1, shadows: 'high', ao: true, bloom: true, antialias: true, grading: true, grass: 'velvet', scenery: 'full' },
+  low: {
+    resolution: 0.5,
+    shadows: 'off',
+    ao: false,
+    bloom: false,
+    antialias: false,
+    grading: false,
+    grass: 'off',
+    scenery: 'reduced',
+  },
+  medium: {
+    resolution: 0.75,
+    shadows: 'low',
+    ao: false,
+    bloom: true,
+    antialias: true,
+    grading: true,
+    grass: 'velvet',
+    scenery: 'full',
+  },
+  high: {
+    resolution: 1,
+    shadows: 'high',
+    ao: true,
+    bloom: true,
+    antialias: true,
+    grading: true,
+    grass: 'velvet',
+    scenery: 'full',
+  },
 };
 
 export const RESOLUTIONS = [0.5, 0.75, 1] as const;

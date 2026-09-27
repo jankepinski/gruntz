@@ -161,14 +161,24 @@ export function moveObject(o: LevelObject, x: number, y: number): LevelObject {
 }
 
 /** Rotating or mirroring whole maps is handy when making symmetric battle maps. */
-export function mirrorLevel(grid: TileGrid, objects: LevelObject[], axis: 'x' | 'y'): { grid: TileGrid; objects: LevelObject[] } {
+export function mirrorLevel(
+  grid: TileGrid,
+  objects: LevelObject[],
+  axis: 'x' | 'y',
+): { grid: TileGrid; objects: LevelObject[] } {
   const { width, height } = gridSize(grid);
   const flipName = (n: string): string => {
     const swap: Record<string, string> = axis === 'x' ? { E: 'W', W: 'E' } : { N: 'S', S: 'N' };
     const m = /^(ARROW2?_)([NESW])$/.exec(n);
     return m && swap[m[2]!] ? `${m[1]}${swap[m[2]!]}` : n;
   };
-  const next = axis === 'x' ? grid.map(row => row.slice().reverse().map(flipName)) : grid.slice().reverse().map(row => row.map(flipName));
+  const next =
+    axis === 'x'
+      ? grid.map(row => row.slice().reverse().map(flipName))
+      : grid
+          .slice()
+          .reverse()
+          .map(row => row.map(flipName));
   const f = (x: number, y: number): [number, number] => (axis === 'x' ? [width - 1 - x, y] : [x, height - 1 - y]);
   const flipDir = (d: Dir): Dir => (axis === 'x' ? (8 - d) % 8 : (12 - d) % 8) as Dir;
   return {
@@ -176,7 +186,8 @@ export function mirrorLevel(grid: TileGrid, objects: LevelObject[], axis: 'x' | 
     objects: objects.map(o => {
       const m = mapObjectPoints(o, f);
       if (m.type === 'ball' || m.type === 'dropper') return { ...m, dir: flipDir(m.dir) };
-      if ((m.type === 'spotlight' || m.type === 'ufo' || m.type === 'slime') && m.clockwise !== undefined) return { ...m, clockwise: !m.clockwise };
+      if ((m.type === 'spotlight' || m.type === 'ufo' || m.type === 'slime') && m.clockwise !== undefined)
+        return { ...m, clockwise: !m.clockwise };
       if (m.type === 'spotlight' || m.type === 'ufo' || m.type === 'slime') return { ...m, clockwise: false };
       if (m.type === 'grunt' && m.facing !== undefined) return { ...m, facing: flipDir(m.facing) };
       return m;
@@ -185,13 +196,33 @@ export function mirrorLevel(grid: TileGrid, objects: LevelObject[], axis: 'x' | 
 }
 
 /** Assemble a level file from the editor's working data. */
-export function buildLevel(meta: Omit<LevelData, 'tiles' | 'legend' | 'objects'>, grid: TileGrid, objects: LevelObject[]): LevelData {
+export function buildLevel(
+  meta: Omit<LevelData, 'tiles' | 'legend' | 'objects'>,
+  grid: TileGrid,
+  objects: LevelObject[],
+): LevelData {
   const { tiles, legend } = gridToTiles(grid);
   const level: LevelData = { ...meta, tiles, objects };
   if (Object.keys(legend).length) level.legend = legend;
   // Stable key order makes diffs of level files readable.
   const ordered: Record<string, unknown> = {};
-  for (const k of ['id', 'name', 'mode', 'theme', 'world', 'index', 'secret', 'players', 'ovens', 'autoToggleMs', 'megaphone', 'resources', 'legend', 'tiles', 'objects']) {
+  for (const k of [
+    'id',
+    'name',
+    'mode',
+    'theme',
+    'world',
+    'index',
+    'secret',
+    'players',
+    'ovens',
+    'autoToggleMs',
+    'megaphone',
+    'resources',
+    'legend',
+    'tiles',
+    'objects',
+  ]) {
     const v = (level as unknown as Record<string, unknown>)[k];
     if (v !== undefined) ordered[k] = v;
   }
@@ -203,7 +234,8 @@ export function blankLevel(mode: LevelData['mode'], width = 24, height = 18): Le
   const grid: TileGrid = [];
   for (let y = 0; y < height; y++) {
     const row: string[] = [];
-    for (let x = 0; x < width; x++) row.push(x === 0 || y === 0 || x === width - 1 || y === height - 1 ? 'CLIFF' : 'GROUND');
+    for (let x = 0; x < width; x++)
+      row.push(x === 0 || y === 0 || x === width - 1 || y === height - 1 ? 'CLIFF' : 'GROUND');
     grid.push(row);
   }
   const objects: LevelObject[] =

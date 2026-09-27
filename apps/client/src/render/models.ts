@@ -119,7 +119,17 @@ export class ClipPlayer {
 
   constructor(private model: GruntModel) {}
 
-  play(name: string, opts: { loop?: boolean; duration?: number; speed?: number; key?: string; fade?: number; randomStart?: boolean } = {}): void {
+  play(
+    name: string,
+    opts: {
+      loop?: boolean;
+      duration?: number;
+      speed?: number;
+      key?: string;
+      fade?: number;
+      randomStart?: boolean;
+    } = {},
+  ): void {
     const key = opts.key ?? name;
     if (key === this.currentKey) {
       if (this.current && opts.speed !== undefined && opts.loop !== false) this.current.timeScale = opts.speed;
@@ -202,7 +212,10 @@ export function createProp(name: string, teamColor?: number, rockColor?: number)
  * separate objects whose origin sits on their joint; they are returned with their
  * original offsets so they can be rotated in place.
  */
-export function createHazard(name: string, parts: string[] = []): { root: THREE.Group; parts: Map<string, THREE.Object3D> } | null {
+export function createHazard(
+  name: string,
+  parts: string[] = [],
+): { root: THREE.Group; parts: Map<string, THREE.Object3D> } | null {
   const gltf = models.get('hazards');
   const node = gltf?.scene.getObjectByName(name);
   if (!node) return null;

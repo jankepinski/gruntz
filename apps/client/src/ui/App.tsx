@@ -33,8 +33,12 @@ export function App() {
   useLang();
   const params = new URLSearchParams(location.search);
   const quick = levelById(params.get('play') ?? '');
-  const [screen, setScreen] = useState<Screen>(() => (quick ? 'game' : params.get('room') ? 'multiplayer' : params.has('editor') ? 'editor' : 'menu'));
-  const [launch, setLaunch] = useState<GameLaunch | null>(() => (quick ? quickLaunch(quick, Number(params.get('bots') ?? 1)) : null));
+  const [screen, setScreen] = useState<Screen>(() =>
+    quick ? 'game' : params.get('room') ? 'multiplayer' : params.has('editor') ? 'editor' : 'menu',
+  );
+  const [launch, setLaunch] = useState<GameLaunch | null>(() =>
+    quick ? quickLaunch(quick, Number(params.get('bots') ?? 1)) : null,
+  );
 
   const play = (l: GameLaunch) => {
     setLaunch(l);
@@ -45,13 +49,26 @@ export function App() {
     return <EditorScreen model={getEditorModel(params.get('editor'))} back={() => setScreen('menu')} />;
   }
   if (screen === 'game' && launch) {
-    const next = launch.kind === 'sp' && launch.level.mode === 'quest' && !launch.level.secret ? CAMPAIGN[CAMPAIGN.findIndex(l => l.id === launch.level.id) + 1] : undefined;
+    const next =
+      launch.kind === 'sp' && launch.level.mode === 'quest' && !launch.level.secret
+        ? CAMPAIGN[CAMPAIGN.findIndex(l => l.id === launch.level.id) + 1]
+        : undefined;
     return (
       <GameScreen
         launch={launch}
-        onExit={() => setScreen(launch.kind === 'mp' ? 'multiplayer' : launch.kind === 'sp' && launch.level.mode === 'quest' ? 'quest' : 'menu')}
+        onExit={() =>
+          setScreen(
+            launch.kind === 'mp'
+              ? 'multiplayer'
+              : launch.kind === 'sp' && launch.level.mode === 'quest'
+                ? 'quest'
+                : 'menu',
+          )
+        }
         onRestart={() => setLaunch({ ...launch, seed: Date.now() >>> 0 })}
-        onNext={next && launch.kind === 'sp' ? () => setLaunch({ ...launch, level: next, seed: Date.now() >>> 0 }) : undefined}
+        onNext={
+          next && launch.kind === 'sp' ? () => setLaunch({ ...launch, level: next, seed: Date.now() >>> 0 }) : undefined
+        }
       />
     );
   }
@@ -132,7 +149,11 @@ function QuestSelect({ back, play }: { back: () => void; play: (l: GameLaunch) =
   // Levels unlock one after another through the whole campaign; a world's secret level
   // opens once all four warp letters were found in that world.
   const unlocked = (level: LevelData, world: LevelData[]) => {
-    if (level.secret) return secretUnlocked(progress, world.filter(l => !l.secret).map(l => l.id));
+    if (level.secret)
+      return secretUnlocked(
+        progress,
+        world.filter(l => !l.secret).map(l => l.id),
+      );
     const i = CAMPAIGN.indexOf(level);
     return i <= 0 || progress.completed.includes(level.id) || progress.completed.includes(CAMPAIGN[i - 1]!.id);
   };
@@ -155,7 +176,10 @@ function QuestSelect({ back, play }: { back: () => void; play: (l: GameLaunch) =
               {levels.map((l, i) => {
                 const isDone = progress.completed.includes(l.id);
                 const open = unlocked(l, levels);
-                const found = worldLetters(progress, levels.filter(x => !x.secret).map(x => x.id));
+                const found = worldLetters(
+                  progress,
+                  levels.filter(x => !x.secret).map(x => x.id),
+                );
                 return (
                   <button
                     class={`level-card ${isDone ? 'done' : ''} ${l.secret ? 'secret' : ''}`}

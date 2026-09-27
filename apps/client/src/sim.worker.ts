@@ -6,7 +6,9 @@ import type { WorkerControl } from './net/transport.ts';
 
 declare const self: DedicatedWorkerGlobalScope;
 
-self.addEventListener('unhandledrejection', e => console.warn('worker unhandled rejection:', (e.reason as Error)?.stack ?? e.reason));
+self.addEventListener('unhandledrejection', e =>
+  console.warn('worker unhandled rejection:', (e.reason as Error)?.stack ?? e.reason),
+);
 
 let session: GameSession | null = null;
 let team = 0;
@@ -60,7 +62,13 @@ self.onmessage = (e: MessageEvent) => {
       const snapshot = session.tracker(team).snapshot(session.world);
       post({
         t: 'start',
-        start: { level: msg.level, team, players: msg.players, snapshot, startTime: performance.timeOrigin + performance.now() },
+        start: {
+          level: msg.level,
+          team,
+          players: msg.players,
+          snapshot,
+          startTime: performance.timeOrigin + performance.now(),
+        },
       });
       last = performance.now();
       acc = 0;
