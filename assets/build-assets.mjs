@@ -14,7 +14,12 @@ import { existsSync, statSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { NodeIO } from '@gltf-transform/core';
-import { EXTMeshoptCompression, KHRMeshQuantization, KHRTextureTransform, KHRMaterialsEmissiveStrength } from '@gltf-transform/extensions';
+import {
+  EXTMeshoptCompression,
+  KHRMeshQuantization,
+  KHRTextureTransform,
+  KHRMaterialsEmissiveStrength,
+} from '@gltf-transform/extensions';
 import { dedup, prune, weld } from '@gltf-transform/functions';
 import { MeshoptEncoder } from 'meshoptimizer';
 
@@ -35,7 +40,8 @@ const args = process.argv.slice(2);
 const skipBlender = args.includes('--no-blender');
 const wanted = args.filter(a => !a.startsWith('--'));
 const names = wanted.length ? wanted : Object.keys(SCRIPTS);
-for (const n of names) if (!SCRIPTS[n]) throw new Error(`Unknown model "${n}" (known: ${Object.keys(SCRIPTS).join(', ')})`);
+for (const n of names)
+  if (!SCRIPTS[n]) throw new Error(`Unknown model "${n}" (known: ${Object.keys(SCRIPTS).join(', ')})`);
 
 const kb = f => `${(statSync(f).size / 1024).toFixed(0)} KB`;
 
@@ -44,7 +50,9 @@ if (!skipBlender) {
   for (const n of names) {
     const [script, ...extra] = SCRIPTS[n];
     console.log(`▸ blender ${script} ${extra.join(' ')}`);
-    execFileSync(BLENDER, ['-b', '-P', join(ROOT, 'assets/blender/models', script), '--', ...extra], { stdio: ['ignore', 'ignore', 'inherit'] });
+    execFileSync(BLENDER, ['-b', '-P', join(ROOT, 'assets/blender/models', script), '--', ...extra], {
+      stdio: ['ignore', 'ignore', 'inherit'],
+    });
   }
 }
 
@@ -64,7 +72,10 @@ for (const n of names) {
   await doc.transform(dedup(), weld(), prune({ keepAttributes: true }));
   // Meshopt compression without quantization: quantizing would move scale into the
   // nodes, and the game bakes node transforms into instanced terrain pieces itself.
-  doc.createExtension(EXTMeshoptCompression).setRequired(true).setEncoderOptions({ method: EXTMeshoptCompression.EncoderMethod.QUANTIZE });
+  doc
+    .createExtension(EXTMeshoptCompression)
+    .setRequired(true)
+    .setEncoderOptions({ method: EXTMeshoptCompression.EncoderMethod.QUANTIZE });
   await io.write(file, doc);
   console.log(`✓ ${n}.glb ${before} → ${kb(file)}`);
 }

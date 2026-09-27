@@ -154,7 +154,12 @@ const SOLUTIONS: Record<string, (r: Walkthrough) => void> = {
     const a = r.gruntAt(3, 24);
     const b = r.gruntAt(4, 26);
     const c = r.gruntAt(3, 28);
-    const [hitter, breaker, bomber, defender] = [r.enemyAt(29, 21), r.enemyAt(27, 26), r.enemyAt(14, 13), r.enemyAt(42, 25)];
+    const [hitter, breaker, bomber, defender] = [
+      r.enemyAt(29, 21),
+      r.enemyAt(27, 26),
+      r.enemyAt(14, 13),
+      r.enemyAt(42, 25),
+    ];
     r.pickup(a, 7, 22, 'GAUNTLETZ');
     r.pickup(b, 9, 27, 'CLUB');
     r.tool(a, 14, 24); // one punch and the giant rock is gone
@@ -472,7 +477,10 @@ const SOLUTIONS: Record<string, (r: Walkthrough) => void> = {
     r.attack(b, toyer!);
     r.move(a, 21, 24);
     r.cmd({ type: 'useTool', ids: [a], x: 22, y: 24 }); // rolling ballz!
-    r.until(() => guards.every(g => !r.w.get(g!, 'grunt') || r.grunt(g!).action.kind === 'death'), 'the guardz flattened');
+    r.until(
+      () => guards.every(g => !r.w.get(g!, 'grunt') || r.grunt(g!).action.kind === 'death'),
+      'the guardz flattened',
+    );
     r.until(() => [...r.w.all('ball')].length === 0, 'the ballz gone');
     r.pickup(a, 31, 24, 'WARPSTONE');
     r.deliver(a, 36, 13);
@@ -522,7 +530,12 @@ const SOLUTIONS: Record<string, (r: Walkthrough) => void> = {
     if (wall.includes(26)) {
       while (r.w.objectAt(26, 14, 'brickz')) {
         const n = r.w.objectAt(26, 14, 'brickz')!.layers.length;
-        r.tool(a, 26, 14, () => (r.w.objectAt(26, 14, 'brickz')?.layers.length ?? 0) < n && r.grunt(a).action.kind === 'idle');
+        r.tool(
+          a,
+          26,
+          14,
+          () => (r.w.objectAt(26, 14, 'brickz')?.layers.length ?? 0) < n && r.grunt(a).action.kind === 'idle',
+        );
       }
     }
     r.move(a, 35, 12); // cola
@@ -679,7 +692,13 @@ const SOLUTIONS: Record<string, (r: Walkthrough) => void> = {
       [b, 24, 15],
     ]);
     r.castScroll(a); // toyz for everybody over there
-    r.until(() => [...r.w.all('grunt')].filter(g => g.team !== 0).every(g => g.action.kind === 'play' || g.action.kind === 'death'), 'guardz playing');
+    r.until(
+      () =>
+        [...r.w.all('grunt')]
+          .filter(g => g.team !== 0)
+          .every(g => g.action.kind === 'play' || g.action.kind === 'death'),
+      'guardz playing',
+    );
     r.cmd({ type: 'move', ids: [b], x: 19, y: 12 }); // b waits on the soap island, out of range
     r.move(a, 33, 13);
     r.pickup(a, 38, 5, 'WARPSTONE');
@@ -749,7 +768,12 @@ const SOLUTIONS: Record<string, (r: Walkthrough) => void> = {
     for (const y of [15, 16]) {
       while (r.w.objectAt(34, y, 'brickz')) {
         const n = r.w.objectAt(34, y, 'brickz')!.layers.length;
-        r.tool(a, 34, y, () => (r.w.objectAt(34, y, 'brickz')?.layers.length ?? 0) < n && r.grunt(a).action.kind === 'idle');
+        r.tool(
+          a,
+          34,
+          y,
+          () => (r.w.objectAt(34, y, 'brickz')?.layers.length ?? 0) < n && r.grunt(a).action.kind === 'idle',
+        );
       }
     }
     r.move(a, 40, 9);

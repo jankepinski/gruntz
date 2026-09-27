@@ -10,7 +10,14 @@ import { SettingsPanel } from './Settings.tsx';
 import { markCompleted } from '../game/progress.ts';
 
 export type GameLaunch =
-  | { kind: 'sp'; level: LevelData; players: PlayerInfo[]; team: number; seed: number; /** Started from the level editor. */ test?: boolean }
+  | {
+      kind: 'sp';
+      level: LevelData;
+      players: PlayerInfo[];
+      team: number;
+      seed: number;
+      /** Started from the level editor. */ test?: boolean;
+    }
   | { kind: 'mp'; transport: GameTransport; seed: number };
 
 export function GameScreen({
@@ -35,7 +42,13 @@ export function GameScreen({
     const canvas = canvasRef.current!;
     const transport =
       launch.kind === 'sp'
-        ? new WorkerTransport({ t: 'init', level: launch.level, players: launch.players, seed: launch.seed, team: launch.team })
+        ? new WorkerTransport({
+            t: 'init',
+            level: launch.level,
+            players: launch.players,
+            seed: launch.seed,
+            team: launch.team,
+          })
         : launch.transport;
     const c = new GameClient(canvas, transport, {
       singlePlayer: launch.kind === 'sp',
@@ -75,9 +88,17 @@ export function GameScreen({
       )}
       {client && <DragBox client={client} />}
       {client && menu && <ContextMenu client={client} menu={menu} close={() => setMenu(null)} />}
-      {client && <PauseOverlay client={client} onExit={onExit} onRestart={launch.kind === 'sp' ? onRestart : undefined} />}
+      {client && (
+        <PauseOverlay client={client} onExit={onExit} onRestart={launch.kind === 'sp' ? onRestart : undefined} />
+      )}
       {client && end && (
-        <EndScreen client={client} end={end} onExit={onExit} onRestart={launch.kind === 'sp' ? onRestart : undefined} onNext={end.winner === client.ui.get().team ? onNext : undefined} />
+        <EndScreen
+          client={client}
+          end={end}
+          onExit={onExit}
+          onRestart={launch.kind === 'sp' ? onRestart : undefined}
+          onNext={end.winner === client.ui.get().team ? onNext : undefined}
+        />
       )}
     </div>
   );
@@ -106,10 +127,20 @@ function DragBox({ client }: { client: GameClient }) {
   if (!r) return null;
   const x = Math.min(r.x0, r.x1);
   const y = Math.min(r.y0, r.y1);
-  return <div class="drag-box" style={{ left: x, top: y, width: Math.abs(r.x1 - r.x0), height: Math.abs(r.y1 - r.y0) }} />;
+  return (
+    <div class="drag-box" style={{ left: x, top: y, width: Math.abs(r.x1 - r.x0), height: Math.abs(r.y1 - r.y0) }} />
+  );
 }
 
-function ContextMenu({ client, menu, close }: { client: GameClient; menu: { x: number; y: number; grunt: Grunt }; close: () => void }) {
+function ContextMenu({
+  client,
+  menu,
+  close,
+}: {
+  client: GameClient;
+  menu: { x: number; y: number; grunt: Grunt };
+  close: () => void;
+}) {
   useEffect(() => {
     const onDown = (e: PointerEvent) => {
       if (!(e.target as HTMLElement).closest('.context-menu')) close();
@@ -137,12 +168,23 @@ function ContextMenu({ client, menu, close }: { client: GameClient; menu: { x: n
   );
 }
 
-function PauseOverlay({ client, onExit, onRestart }: { client: GameClient; onExit: () => void; onRestart?: (() => void) | undefined }) {
+function PauseOverlay({
+  client,
+  onExit,
+  onRestart,
+}: {
+  client: GameClient;
+  onExit: () => void;
+  onRestart?: (() => void) | undefined;
+}) {
   const ui = useStore(client.ui);
   const [open, setOpen] = useState(false);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.code === 'F10' || (e.code === 'Escape' && client.ui.get().selection.length === 0 && client.ui.get().mode.kind === 'normal')) {
+      if (
+        e.code === 'F10' ||
+        (e.code === 'Escape' && client.ui.get().selection.length === 0 && client.ui.get().mode.kind === 'normal')
+      ) {
         setOpen(o => !o);
       }
     };
@@ -184,7 +226,13 @@ function EndScreen({
   return (
     <div class="overlay">
       <div class={`panel end ${won ? 'won' : 'lost'}`}>
-        <h2>{won ? t('hud.victory') : end.winner !== null && ui.start && ui.start.players.length > 1 ? t('hud.winner', { name: winnerName }) : t('hud.defeat')}</h2>
+        <h2>
+          {won
+            ? t('hud.victory')
+            : end.winner !== null && ui.start && ui.start.players.length > 1
+              ? t('hud.winner', { name: winnerName })
+              : t('hud.defeat')}
+        </h2>
         {stats && (
           <div class="stats">
             <div>

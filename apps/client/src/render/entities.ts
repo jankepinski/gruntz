@@ -15,7 +15,16 @@ import {
   type ToyId,
   type World,
 } from '@gruntz/core';
-import { AI_COLORS, BRICK_COLORS, buildGrunt, buildItem, isPowerupItem, mat, TEAM_COLORS, type GruntRig } from './placeholders.ts';
+import {
+  AI_COLORS,
+  BRICK_COLORS,
+  buildGrunt,
+  buildItem,
+  isPowerupItem,
+  mat,
+  TEAM_COLORS,
+  type GruntRig,
+} from './placeholders.ts';
 import { ClipPlayer, createGrunt, createProp, type GruntModel } from './models.ts';
 import { themeRock } from './tileKit.ts';
 import { createHazardView } from './hazardViews.ts';
@@ -85,7 +94,12 @@ export function gruntTilePosition(g: Grunt, tick: number): { x: number; y: numbe
 class Bars {
   readonly group = new THREE.Group();
   private bars: { bg: THREE.Mesh; fg: THREE.Mesh; mat: THREE.MeshBasicMaterial }[] = [];
-  private static bgMat = new THREE.MeshBasicMaterial({ color: 0x1a1410, depthTest: false, transparent: true, opacity: 0.75 });
+  private static bgMat = new THREE.MeshBasicMaterial({
+    color: 0x1a1410,
+    depthTest: false,
+    transparent: true,
+    opacity: 0.75,
+  });
   private static geo = new THREE.PlaneGeometry(1, 1);
 
   constructor(count: number) {
@@ -149,7 +163,10 @@ class GruntView implements View {
   private damagedAt = -10;
   private powerFx: THREE.Mesh;
 
-  constructor(g: Grunt, private camera: () => THREE.Camera) {
+  constructor(
+    g: Grunt,
+    private camera: () => THREE.Camera,
+  ) {
     this.color = gruntColor(g);
     this.rig = buildGrunt(this.color);
     this.model = createGrunt(this.color);
@@ -163,7 +180,12 @@ class GruntView implements View {
     } else {
       this.body.add(this.rig.root);
     }
-    const ringMat = new THREE.MeshBasicMaterial({ color: 0x7dff6a, transparent: true, opacity: 0.9, depthWrite: false });
+    const ringMat = new THREE.MeshBasicMaterial({
+      color: 0x7dff6a,
+      transparent: true,
+      opacity: 0.9,
+      depthWrite: false,
+    });
     this.ring = new THREE.Mesh(new THREE.RingGeometry(0.36, 0.44, 32), ringMat);
     this.ring.rotation.x = -Math.PI / 2;
     this.ring.position.y = 0.02;
@@ -238,7 +260,11 @@ class GruntView implements View {
     const st = stamina(ctx.world, g) / 20;
     const showBars = selected || hovered || ctx.showAllBars || ctx.time - this.damagedAt < 2;
     const dying = g.action.kind === 'death';
-    this.bars.set(0, showBars && !dying ? g.health / MAX_HEALTH : null, g.health > 12 ? 0x55dd44 : g.health > 6 ? 0xf2c83a : 0xe8413a);
+    this.bars.set(
+      0,
+      showBars && !dying ? g.health / MAX_HEALTH : null,
+      g.health > 12 ? 0x55dd44 : g.health > 6 ? 0xf2c83a : 0xe8413a,
+    );
     this.bars.set(1, st < 1 && !dying && (g.team === ctx.viewer || showBars) ? st : null, 0x4aa8ff);
     this.bars.set(2, g.flying ? g.flight / MAX_FLIGHT : null, 0xd0d0d8);
     this.bars.face(this.camera());
@@ -414,7 +440,12 @@ class GruntView implements View {
                   ? 'cast'
                   : 'smash';
         const loop = clip === 'dig' || clip === 'suck' || clip === 'spy';
-        player.play(clip, loop ? { key: `${clip}${a.start}` } : { loop: false, duration: Math.min(seconds, 1.2), key: `${clip}${a.start}` });
+        player.play(
+          clip,
+          loop
+            ? { key: `${clip}${a.start}` }
+            : { loop: false, duration: Math.min(seconds, 1.2), key: `${clip}${a.start}` },
+        );
         break;
       }
       case 'struck':
@@ -503,7 +534,7 @@ class GruntView implements View {
   }
 
   private syncToy(g: Grunt): void {
-    const playing = g.action.kind === 'play' ? g.action.item ?? null : null;
+    const playing = g.action.kind === 'play' ? (g.action.item ?? null) : null;
     if (playing === this.toyItem) return;
     if (this.toyMesh) this.toyMesh.removeFromParent();
     this.toyItem = playing;
@@ -694,7 +725,10 @@ function attachUpright(model: GruntModel, bone: THREE.Object3D, item: THREE.Obje
   const rootInv = new THREE.Matrix4().copy(model.root.matrixWorld).invert();
   const boneRest = new THREE.Matrix4().multiplyMatrices(rootInv, bone.matrixWorld);
   const at = offset ?? new THREE.Vector3().setFromMatrixPosition(boneRest);
-  const local = new THREE.Matrix4().copy(boneRest).invert().multiply(new THREE.Matrix4().makeTranslation(at.x, at.y, at.z));
+  const local = new THREE.Matrix4()
+    .copy(boneRest)
+    .invert()
+    .multiply(new THREE.Matrix4().makeTranslation(at.x, at.y, at.z));
   local.decompose(item.position, item.quaternion, item.scale);
   bone.add(item);
 }
@@ -770,9 +804,13 @@ class ProjectileView implements View {
   private mesh: THREE.Object3D;
   constructor(e: Entity) {
     const p = e as Extract<Entity, { kind: 'projectile' }>;
-    const item = p.type === 'NERFGUN' ? 'SQUEAKTOY' : p.type === 'GUNHAT' ? 'TIMEBOMB' : p.type === 'WELDER' ? '' : p.type;
+    const item =
+      p.type === 'NERFGUN' ? 'SQUEAKTOY' : p.type === 'GUNHAT' ? 'TIMEBOMB' : p.type === 'WELDER' ? '' : p.type;
     if (p.type === 'WELDER') {
-      this.mesh = new THREE.Mesh(new THREE.SphereGeometry(0.14, 12, 10), new THREE.MeshBasicMaterial({ color: 0xff7a1a }));
+      this.mesh = new THREE.Mesh(
+        new THREE.SphereGeometry(0.14, 12, 10),
+        new THREE.MeshBasicMaterial({ color: 0xff7a1a }),
+      );
     } else if (p.type === 'WINGZ') {
       const cone = new THREE.Mesh(
         new THREE.ConeGeometry(0.22, 0.6, 12, 1, true),
@@ -898,7 +936,11 @@ class BallView implements View {
   constructor(theme: ThemeId) {
     // Rolling "boulderz of doom" in the rocky worlds, 8-ballz elsewhere.
     const boulder = theme === 'rocky' || theme === 'training' || theme === 'ice' || theme === 'tropics';
-    const model = boulder ? createProp('boulder', undefined, themeRock(theme)) : theme === 'minis' ? golfBall() : createProp('ball');
+    const model = boulder
+      ? createProp('boulder', undefined, themeRock(theme))
+      : theme === 'minis'
+        ? golfBall()
+        : createProp('ball');
     if (model) {
       // Re-centre the ball so it can spin around its middle.
       model.position.y = -0.42;
@@ -960,7 +1002,10 @@ class FortView implements View {
     const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.7), mat(0x5a3a20));
     pole.position.y = 1.7;
     this.object.add(pole);
-    this.flag = new THREE.Mesh(new THREE.PlaneGeometry(0.4, 0.25), new THREE.MeshStandardMaterial({ color, side: THREE.DoubleSide }));
+    this.flag = new THREE.Mesh(
+      new THREE.PlaneGeometry(0.4, 0.25),
+      new THREE.MeshStandardMaterial({ color, side: THREE.DoubleSide }),
+    );
     this.flag.position.set(0.2, 1.9, 0);
     this.object.add(this.flag);
     this.object.position.copy(tilePos(f.x, f.y));
@@ -997,7 +1042,8 @@ class PadView implements View {
         const mesh = o as THREE.Mesh;
         if (mesh.isMesh) {
           const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
-          for (const m of mats) if (m.name.startsWith('TeamColor')) this.materials.push(m as THREE.MeshStandardMaterial);
+          for (const m of mats)
+            if (m.name.startsWith('TeamColor')) this.materials.push(m as THREE.MeshStandardMaterial);
         }
       });
     } else {
@@ -1040,7 +1086,10 @@ class WormholeView implements View {
       });
       this.object.add(model);
     }
-    this.ring = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.03, 8, 24), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.8 }));
+    this.ring = new THREE.Mesh(
+      new THREE.TorusGeometry(0.2, 0.03, 8, 24),
+      new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.8 }),
+    );
     this.ring.rotation.x = -Math.PI / 2;
     this.ring.position.y = 0.08;
     this.object.add(this.ring);
@@ -1062,7 +1111,10 @@ class FlagView implements View {
     pole.position.y = 0.6;
     this.object.add(pole);
     const tex = checkerTexture();
-    this.cloth = new THREE.Mesh(new THREE.PlaneGeometry(0.45, 0.3), new THREE.MeshStandardMaterial({ map: tex, side: THREE.DoubleSide }));
+    this.cloth = new THREE.Mesh(
+      new THREE.PlaneGeometry(0.45, 0.3),
+      new THREE.MeshStandardMaterial({ map: tex, side: THREE.DoubleSide }),
+    );
     this.cloth.position.set(0.23, 0.3, 0);
     this.object.add(this.cloth);
     this.object.position.copy(tilePos(e.x, e.y));
@@ -1187,7 +1239,14 @@ export class EntityLayer {
   }
 
   /** Screen-space picking of gruntz: nearest grunt whose body is under the cursor. */
-  pickGrunt(ndc: THREE.Vector2, camera: THREE.Camera, width: number, height: number, filter?: (g: Grunt) => boolean, world?: World): Grunt | null {
+  pickGrunt(
+    ndc: THREE.Vector2,
+    camera: THREE.Camera,
+    width: number,
+    height: number,
+    filter?: (g: Grunt) => boolean,
+    world?: World,
+  ): Grunt | null {
     let best: Grunt | null = null;
     let bestD = 34;
     for (const [id, entry] of this.views) {
@@ -1209,7 +1268,13 @@ export class EntityLayer {
   }
 
   /** Grunt ids whose screen position falls in a rectangle (NDC). */
-  gruntsInRect(min: THREE.Vector2, max: THREE.Vector2, camera: THREE.Camera, world: World, filter: (g: Grunt) => boolean): Grunt[] {
+  gruntsInRect(
+    min: THREE.Vector2,
+    max: THREE.Vector2,
+    camera: THREE.Camera,
+    world: World,
+    filter: (g: Grunt) => boolean,
+  ): Grunt[] {
     const out: Grunt[] = [];
     for (const [id, entry] of this.views) {
       if (entry.kind !== 'grunt') continue;

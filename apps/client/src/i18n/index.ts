@@ -59,7 +59,9 @@ export function t(key: Key, params?: Record<string, string | number>): string {
 
 /** Translate an item / tile / AI identifier (e.g. GAUNTLETZ) with a fallback to a nice name. */
 export function itemName(id: string): string {
-  return lookup(dicts[current], `items.${id}`) ?? lookup(dicts.en, `items.${id}`) ?? id.charAt(0) + id.slice(1).toLowerCase();
+  return (
+    lookup(dicts[current], `items.${id}`) ?? lookup(dicts.en, `items.${id}`) ?? id.charAt(0) + id.slice(1).toLowerCase()
+  );
 }
 
 export function aiName(id: string): string {

@@ -1,5 +1,13 @@
 import { MAX_FLIGHT, msToTicks } from '../constants.ts';
-import { HEALTH_GAIN, itemType, POWERUP_DURATION_MS, TOOL_INFO, type ItemId, type ToolId, type ToyId } from '../data/items.ts';
+import {
+  HEALTH_GAIN,
+  itemType,
+  POWERUP_DURATION_MS,
+  TOOL_INFO,
+  type ItemId,
+  type ToolId,
+  type ToyId,
+} from '../data/items.ts';
 import { T, tileDef, tileId } from '../data/tiles.ts';
 import type { Point } from '../point.ts';
 import { aiNotice } from './ai.ts';
@@ -114,7 +122,8 @@ export function pickup(w: World, p: Pickup, g: Grunt): boolean {
           // Time stands still for everybody else's gruntz.
           w.fx('stopwatch', g, g.id);
           for (const other of w.all('grunt')) {
-            if (other.team !== g.team && !isGone(other) && w.alliance(other.team) !== w.alliance(g.team)) freezeFor(w, other, STOPWATCH_MS);
+            if (other.team !== g.team && !isGone(other) && w.alliance(other.team) !== w.alliance(g.team))
+              freezeFor(w, other, STOPWATCH_MS);
           }
           break;
       }
@@ -470,7 +479,10 @@ function scatterGruntz(w: World, at: Point): void {
   const free: Point[] = [];
   for (let y = 0; y < w.height; y++)
     for (let x = 0; x < w.width; x++)
-      if ((w.traits(x, y) & (T.SOLID | T.NOGO | T.WATER | T.DEATH | T.HOLE | T.PAIN | T.ARROW)) === 0 && !w.gruntAt(x, y))
+      if (
+        (w.traits(x, y) & (T.SOLID | T.NOGO | T.WATER | T.DEATH | T.HOLE | T.PAIN | T.ARROW)) === 0 &&
+        !w.gruntAt(x, y)
+      )
         free.push({ x, y });
   for (let dy = -1; dy <= 1; dy++) {
     for (let dx = -1; dx <= 1; dx++) {
@@ -500,7 +512,8 @@ export function giveSlotItem(w: World, teamIndex: number, slot: number, g: Grunt
       const patch: Partial<Grunt> = { tool: item as ToolId };
       if (item === 'WINGZ') patch.flight = MAX_FLIGHT;
       w.edit(g, patch);
-      if (TOOL_INFO[item as ToolId].water && w.has(g.x, g.y, T.WATER) && item === 'TOOB') w.edit(g, { tool: 'TOOBWATER' });
+      if (TOOL_INFO[item as ToolId].water && w.has(g.x, g.y, T.WATER) && item === 'TOOB')
+        w.edit(g, { tool: 'TOOBWATER' });
     } else if (type === 'toy') {
       w.edit(g, { toy: item as ToyId, spell: item === 'SCROLL' ? 'FREEZE' : null });
     } else if (type === 'powerup') {

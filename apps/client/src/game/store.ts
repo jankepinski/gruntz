@@ -68,10 +68,13 @@ function loadSettings(): Settings {
     if (raw) {
       const saved = JSON.parse(raw) as Partial<Settings>;
       // Older saves only had a quality switch: turn it into full graphics options.
-      const graphics = saved.graphics ? { ...defaults.graphics, ...saved.graphics } : presetGraphics(saved.quality ?? 'high');
+      const graphics = saved.graphics
+        ? { ...defaults.graphics, ...saved.graphics }
+        : presetGraphics(saved.quality ?? 'high');
       graphics.resolution = Math.min(1, graphics.resolution);
       // v3: the medium and high presets grow velvet grass instead of tufts.
-      if ((saved.graphicsVersion ?? 1) < 3 && graphics.grass === 'tufts' && graphics.shadows !== 'off') graphics.grass = 'velvet';
+      if ((saved.graphicsVersion ?? 1) < 3 && graphics.grass === 'tufts' && graphics.shadows !== 'off')
+        graphics.grass = 'velvet';
       return { ...defaults, ...saved, graphics, graphicsVersion: 3 };
     }
   } catch {

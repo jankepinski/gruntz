@@ -30,7 +30,11 @@ class TestClient {
   rejects = new Map<number, string>();
   private seq = 1;
 
-  constructor(port: number, readonly name: string, token?: string) {
+  constructor(
+    port: number,
+    readonly name: string,
+    token?: string,
+  ) {
     this.ws = new WebSocket(`ws://localhost:${port}/ws`);
     this.ws.on('open', () => this.send({ t: 'hello', name, ...(token ? { token } : {}) }));
     this.ws.on('message', data => this.receive(packr.unpack(data as Buffer) as ServerMsg));

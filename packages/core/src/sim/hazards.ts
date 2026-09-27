@@ -7,7 +7,15 @@ import { registerTask, type World } from './world.ts';
 const BREAK_TICKS = 10;
 
 /** Rolling balls / 8-ballz: roll straight, squash every grunt they touch. */
-export function spawnRollingBall(w: World, x: number, y: number, dir: Dir, rate: number, lifetime = 0, every = 0): RollingBall | undefined {
+export function spawnRollingBall(
+  w: World,
+  x: number,
+  y: number,
+  dir: Dir,
+  rate: number,
+  lifetime = 0,
+  every = 0,
+): RollingBall | undefined {
   if (!w.inBounds(x, y) || w.has(x, y, T.SOLID | T.NOGO)) {
     // A launcher keeps trying while its exit is blocked.
     if (every > 0) w.schedule(every, 'launchBall', 0, undefined, x, y, dir, rate, every);
@@ -81,7 +89,17 @@ registerTask('ballGone', (w, id) => {
   if (!ball) return;
   w.destroy(ball);
   if (ball.every && ball.every > 0) {
-    w.schedule(ball.every, 'launchBall', 0, undefined, ball.originX ?? ball.x, ball.originY ?? ball.y, ball.dir, ball.rate, ball.every);
+    w.schedule(
+      ball.every,
+      'launchBall',
+      0,
+      undefined,
+      ball.originX ?? ball.x,
+      ball.originY ?? ball.y,
+      ball.dir,
+      ball.rate,
+      ball.every,
+    );
   }
 });
 

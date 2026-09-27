@@ -4,34 +4,19 @@
     {
       "name": "client",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": [
-        "--filter",
-        "@gruntz/client",
-        "dev"
-      ],
+      "runtimeArgs": ["--filter", "@gruntz/client", "dev"],
       "port": 5173
     },
     {
       "name": "server",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": [
-        "--filter",
-        "@gruntz/server",
-        "dev"
-      ],
+      "runtimeArgs": ["--filter", "@gruntz/server", "dev"],
       "port": 8686
     },
     {
       "name": "server-lag",
       "runtimeExecutable": "env",
-      "runtimeArgs": [
-        "LAG_MS=120",
-        "JITTER_MS=30",
-        "pnpm",
-        "--filter",
-        "@gruntz/server",
-        "dev"
-      ],
+      "runtimeArgs": ["LAG_MS=120", "JITTER_MS=30", "pnpm", "--filter", "@gruntz/server", "dev"],
       "port": 8686
     }
   ]

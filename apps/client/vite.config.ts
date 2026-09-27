@@ -29,7 +29,8 @@ function editorSave(): Plugin {
             const { id, text } = JSON.parse(body) as { id: string; text: string };
             if (!/^[a-z0-9][a-z0-9-]{0,63}$/.test(id)) throw new Error('Bad level id (use a-z, 0-9 and -)');
             const level = JSON.parse(text) as { id?: unknown; tiles?: unknown; objects?: unknown };
-            if (level.id !== id || !Array.isArray(level.tiles) || !Array.isArray(level.objects)) throw new Error('Not a level file');
+            if (level.id !== id || !Array.isArray(level.tiles) || !Array.isArray(level.objects))
+              throw new Error('Not a level file');
             await writeFile(`${LEVEL_DIR}${id}.json`, text);
             res.end('ok');
           } catch (err) {
@@ -60,7 +61,9 @@ function devScreenshots(): Plugin {
         const chunks: Buffer[] = [];
         req.on('data', (c: Buffer) => chunks.push(c));
         req.on('end', async () => {
-          const data = Buffer.concat(chunks).toString().replace(/^data:image\/png;base64,/, '');
+          const data = Buffer.concat(chunks)
+            .toString()
+            .replace(/^data:image\/png;base64,/, '');
           await mkdir(PREVIEW_DIR, { recursive: true });
           await writeFile(`${PREVIEW_DIR}${name}.png`, Buffer.from(data, 'base64'));
           res.end('ok');

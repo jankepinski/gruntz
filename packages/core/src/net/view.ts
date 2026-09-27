@@ -164,7 +164,10 @@ export class ViewTracker {
 
   /** Hash of everything this client should currently have. */
   hash(): number {
-    return hashView(this.tiles, [...this.known.entries()].sort((a, b) => a[0] - b[0]).map(e => e[1]));
+    return hashView(
+      this.tiles,
+      [...this.known.entries()].sort((a, b) => a[0] - b[0]).map(e => e[1]),
+    );
   }
 }
 

@@ -302,7 +302,8 @@ export const pl: DeepPartial<typeof en> & { items: Record<string, string> } = {
     respawn: 'Odradzanie po (s, 0 = nigdy)',
     targets: 'Cele: {n}',
     partners: 'Partnerzy: {n}',
-    linkHint: 'Łączenie: klikaj piramidy, mosty, strzałki lub flagi, żeby je dodać/usunąć. Shift+klik: partner pomarańczowy. Esc: koniec.',
+    linkHint:
+      'Łączenie: klikaj piramidy, mosty, strzałki lub flagi, żeby je dodać/usunąć. Shift+klik: partner pomarańczowy. Esc: koniec.',
     linkWormhole: 'Łączenie: kliknij, dokąd prowadzi teleporter. Esc: koniec.',
     linkSecret: 'Łączenie: kliknij czerwony teleporter, który otwiera ten trigger. Esc: koniec.',
     editLinks: 'Edytuj połączenia',
@@ -335,7 +336,8 @@ export const pl: DeepPartial<typeof en> & { items: Record<string, string> } = {
     problems: 'Problemy',
     noProblems: 'Brak problemów.',
     errorsBlock: 'Popraw błędy przed testem.',
-    shortcuts: 'B pędzel · R prostokąt · G wypełnij · O obiekt · V zaznacz · L połącz · Alt+klik pobierz kafelek · środkowy przycisk przesuwa · Q/E obrót · Ctrl+Z / Ctrl+Y',
+    shortcuts:
+      'B pędzel · R prostokąt · G wypełnij · O obiekt · V zaznacz · L połącz · Alt+klik pobierz kafelek · środkowy przycisk przesuwa · Q/E obrót · Ctrl+Z / Ctrl+Y',
     objectTypes: {
       grunt: 'Grunt gracza',
       enemy: 'Wrogi grunt',

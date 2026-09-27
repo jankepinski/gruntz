@@ -65,7 +65,11 @@ function GeneralTab({ inGame }: { inGame: boolean }) {
       {!inGame && (
         <label class="field">
           <span>{t('mp.name')}</span>
-          <input value={s.playerName} maxLength={16} onInput={e => settings.set({ playerName: (e.target as HTMLInputElement).value })} />
+          <input
+            value={s.playerName}
+            maxLength={16}
+            onInput={e => settings.set({ playerName: (e.target as HTMLInputElement).value })}
+          />
         </label>
       )}
       {toggle('safePath')}
@@ -83,7 +87,12 @@ function GraphicsTab() {
     const next = { ...g, ...patch };
     settings.set({ graphics: { ...next, preset: matchPreset(next) } });
   };
-  const choose = <T extends string | number>(label: Key, value: T, options: [T, string][], onChange: (v: T) => void) => (
+  const choose = <T extends string | number>(
+    label: Key,
+    value: T,
+    options: [T, string][],
+    onChange: (v: T) => void,
+  ) => (
     <div class="setting-row">
       <span>{t(label)}</span>
       <div class="segmented">
@@ -107,7 +116,10 @@ function GraphicsTab() {
         <span>{t('settings.preset')}</span>
         <div class="segmented">
           {(['low', 'medium', 'high'] as const).map(p => (
-            <button class={g.preset === p ? 'active' : ''} onClick={() => settings.set({ graphics: presetGraphics(p, g.fps) })}>
+            <button
+              class={g.preset === p ? 'active' : ''}
+              onClick={() => settings.set({ graphics: presetGraphics(p, g.fps) })}
+            >
               {t(`settings.${p}`)}
             </button>
           ))}
@@ -123,21 +135,36 @@ function GraphicsTab() {
         RESOLUTIONS.map(r => [r, r >= 1 ? t('settings.resNative') : `${Math.round(r * 100)}%`] as [number, string]),
         v => set({ resolution: v }),
       )}
-      {choose('settings.shadows', g.shadows, [
-        ['off', t('settings.off')],
-        ['low', t('settings.shadowsLow')],
-        ['high', t('settings.shadowsHigh')],
-      ], v => set({ shadows: v }))}
-      {choose('settings.grass', g.grass, [
-        ['off', t('settings.off')],
-        ['tufts', t('settings.grassTufts')],
-        ['tuftsShadow', t('settings.grassTuftsShadow')],
-        ['velvet', t('settings.grassVelvet')],
-      ], v => set({ grass: v }))}
-      {choose('settings.scenery', g.scenery, [
-        ['reduced', t('settings.sceneryReduced')],
-        ['full', t('settings.sceneryFull')],
-      ], v => set({ scenery: v }))}
+      {choose(
+        'settings.shadows',
+        g.shadows,
+        [
+          ['off', t('settings.off')],
+          ['low', t('settings.shadowsLow')],
+          ['high', t('settings.shadowsHigh')],
+        ],
+        v => set({ shadows: v }),
+      )}
+      {choose(
+        'settings.grass',
+        g.grass,
+        [
+          ['off', t('settings.off')],
+          ['tufts', t('settings.grassTufts')],
+          ['tuftsShadow', t('settings.grassTuftsShadow')],
+          ['velvet', t('settings.grassVelvet')],
+        ],
+        v => set({ grass: v }),
+      )}
+      {choose(
+        'settings.scenery',
+        g.scenery,
+        [
+          ['reduced', t('settings.sceneryReduced')],
+          ['full', t('settings.sceneryFull')],
+        ],
+        v => set({ scenery: v }),
+      )}
       {flag('ao', 'settings.ao')}
       {flag('bloom', 'settings.bloom')}
       {flag('antialias', 'settings.antialias')}
@@ -166,7 +193,9 @@ function AudioTab() {
             max={1}
             step={0.05}
             value={s.volumes[k]}
-            onInput={e => settings.set({ volumes: { ...s.volumes, [k]: Number((e.target as HTMLInputElement).value) } })}
+            onInput={e =>
+              settings.set({ volumes: { ...s.volumes, [k]: Number((e.target as HTMLInputElement).value) } })
+            }
           />
         </label>
       ))}

@@ -42,7 +42,8 @@ export async function readLevelFile(file: File): Promise<LevelData> {
 
 export function parseLevelText(text: string): LevelData {
   const data = JSON.parse(text) as LevelData;
-  if (!data || typeof data !== 'object' || !Array.isArray(data.tiles) || !Array.isArray(data.objects)) throw new Error('Not a level file');
+  if (!data || typeof data !== 'object' || !Array.isArray(data.tiles) || !Array.isArray(data.objects))
+    throw new Error('Not a level file');
   if (data.mode !== 'quest' && data.mode !== 'battle') throw new Error('Unknown mode');
   return data;
 }

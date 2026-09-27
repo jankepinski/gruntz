@@ -12,7 +12,9 @@ applyVolumes();
 settings.subscribe(applyVolumes);
 
 if (import.meta.env.DEV) {
-  window.addEventListener('unhandledrejection', e => console.warn('unhandled rejection:', (e.reason as Error)?.stack ?? e.reason));
+  window.addEventListener('unhandledrejection', e =>
+    console.warn('unhandled rejection:', (e.reason as Error)?.stack ?? e.reason),
+  );
 }
 
 render(<App />, document.getElementById('app')!);

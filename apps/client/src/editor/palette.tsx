@@ -70,7 +70,15 @@ export function tileBadges(name: string): { main: Badge | null; extra: JSX.Eleme
     case 'arrow':
       if (v.twoWay) extra.push(<Repeat size={12} strokeWidth={2.4} />);
       return {
-        main: { bg: v.twoWay ? '#3a7ad8' : '#e8c83a', fg: v.twoWay ? '#fff' : '#16181c', icon: <span style={{ display: 'inline-flex', transform: `rotate(${v.dir * 45}deg)` }}><ArrowUp size={13} strokeWidth={2.8} /></span> },
+        main: {
+          bg: v.twoWay ? '#3a7ad8' : '#e8c83a',
+          fg: v.twoWay ? '#fff' : '#16181c',
+          icon: (
+            <span style={{ display: 'inline-flex', transform: `rotate(${v.dir * 45}deg)` }}>
+              <ArrowUp size={13} strokeWidth={2.8} />
+            </span>
+          ),
+        },
         extra,
       };
     case 'bridge':
@@ -94,7 +102,13 @@ export function TileCardArt({ name, theme }: { name: string; theme: ThemeId }) {
           {main.icon}
         </span>
       )}
-      {extra.length > 0 && <span class="dock-badges">{extra.map(e => <span class="dock-mini">{e}</span>)}</span>}
+      {extra.length > 0 && (
+        <span class="dock-badges">
+          {extra.map(e => (
+            <span class="dock-mini">{e}</span>
+          ))}
+        </span>
+      )}
     </span>
   );
 }
@@ -107,7 +121,19 @@ export function TileThumb({ name, theme, size = 44 }: { name: string; theme: The
 }
 
 /** 3D render of a map object, with a fallback glyph until it is ready. */
-export function ObjectThumb({ id, theme, obj, fallback, size = 40 }: { id: string; theme: ThemeId; obj: LevelObject; fallback: preact.ComponentChildren; size?: number }) {
+export function ObjectThumb({
+  id,
+  theme,
+  obj,
+  fallback,
+  size = 40,
+}: {
+  id: string;
+  theme: ThemeId;
+  obj: LevelObject;
+  fallback: preact.ComponentChildren;
+  size?: number;
+}) {
   const url = thumbnails.object(theme, id, obj);
   if (!url) return <span class="object-icon">{fallback}</span>;
   return <img class="thumb" src={url} width={size} height={size} alt="" draggable={false} />;
@@ -213,7 +239,9 @@ export function TileSwatch({ name, size = 30 }: { name: string; size?: number })
       fg = '#444';
       break;
     case 'rock':
-      bg = v.alt ? 'radial-gradient(circle, #8a7c6c 55%, #8fbf5a 58%)' : 'radial-gradient(circle, #a09888 55%, #8fbf5a 58%)';
+      bg = v.alt
+        ? 'radial-gradient(circle, #8a7c6c 55%, #8fbf5a 58%)'
+        : 'radial-gradient(circle, #a09888 55%, #8fbf5a 58%)';
       break;
     case 'pad':
       bg = '#b8a482';
@@ -224,7 +252,11 @@ export function TileSwatch({ name, size = 30 }: { name: string; size?: number })
       bg = 'repeating-linear-gradient(90deg, #a08a6a 0 4px, #7a6a4e 4px 5px)';
       break;
     case 'bridge':
-      bg = v.lowered ? (v.over === 'water' ? '#3a8ad8' : '#16121e') : 'repeating-linear-gradient(0deg, #a07040 0 5px, #6a4a2a 5px 6px)';
+      bg = v.lowered
+        ? v.over === 'water'
+          ? '#3a8ad8'
+          : '#16121e'
+        : 'repeating-linear-gradient(0deg, #a07040 0 5px, #6a4a2a 5px 6px)';
       if (v.lowered) glyph = '⌄';
       if (v.auto) inner = '#ffd24a';
       break;

@@ -68,7 +68,8 @@ export class Room {
     const old = this.slots;
     this.slots = Array.from({ length: n }, (_, i) => old[i] ?? { kind: 'open' as const, alliance: i, ready: false });
     // Humans that no longer fit are dropped back to the lobby list.
-    for (const s of old.slice(n)) if (s.kind === 'human' && s.playerId) this.members.get(s.playerId)?.send({ t: 'room', room: null });
+    for (const s of old.slice(n))
+      if (s.kind === 'human' && s.playerId) this.members.get(s.playerId)?.send({ t: 'room', room: null });
   }
 
   summary(): RoomSummary {
@@ -117,7 +118,13 @@ export class Room {
     if (this.status !== 'lobby') return 'in-progress';
     const slot = this.slots.findIndex(s => s.kind === 'open');
     if (slot < 0) return 'room-full';
-    this.slots[slot] = { kind: 'human', playerId: p.id, name: p.name, alliance: this.slots[slot]!.alliance, ready: false };
+    this.slots[slot] = {
+      kind: 'human',
+      playerId: p.id,
+      name: p.name,
+      alliance: this.slots[slot]!.alliance,
+      ready: false,
+    };
     this.members.set(p.id, p);
     p.roomCode = this.code;
     this.pushState();
@@ -132,7 +139,8 @@ export class Room {
     if (this.status === 'playing') {
       // Mid-game: a bot takes over the team.
       const team = this.teamOf.get(p.id);
-      if (team !== undefined && this.session) this.session.setBot(team, new BattleBot(team, 'normal', this.session.world));
+      if (team !== undefined && this.session)
+        this.session.setBot(team, new BattleBot(team, 'normal', this.session.world));
       this.teamOf.delete(p.id);
     } else if (i >= 0) {
       this.slots[i] = { kind: 'open', alliance: this.slots[i]!.alliance, ready: false };
@@ -179,7 +187,13 @@ export class Room {
         const slot = this.slots[msg.slot];
         if (!slot || slot.kind === 'human') return;
         if (msg.kind === 'bot') {
-          const b: RoomSlot = { kind: 'bot', bot: (msg.bot ?? 'normal') as BotLevel, name: `Bot ${msg.slot + 1}`, alliance: slot.alliance, ready: true };
+          const b: RoomSlot = {
+            kind: 'bot',
+            bot: (msg.bot ?? 'normal') as BotLevel,
+            name: `Bot ${msg.slot + 1}`,
+            alliance: slot.alliance,
+            ready: true,
+          };
           this.slots[msg.slot] = b;
         } else if (msg.kind === 'open' || msg.kind === 'closed') {
           this.slots[msg.slot] = { kind: msg.kind, alliance: slot.alliance, ready: false };
@@ -232,7 +246,8 @@ export class Room {
       }
       case 'resync': {
         const team = this.teamOf.get(p.id);
-        if (this.session && team !== undefined) p.send({ t: 'snapshot', s: this.session.tracker(team).snapshot(this.session.world) });
+        if (this.session && team !== undefined)
+          p.send({ t: 'snapshot', s: this.session.tracker(team).snapshot(this.session.world) });
         return;
       }
     }
@@ -270,7 +285,12 @@ export class Room {
         players.push({ team, name: s.name ?? `Bot ${team + 1}`, alliance: s.alliance, bot: s.bot ?? 'normal' });
       }
     });
-    this.session = new GameSession(this.level, players, randomInt(1, 2 ** 31), (team, level, world) => new BattleBot(team, level, world));
+    this.session = new GameSession(
+      this.level,
+      players,
+      randomInt(1, 2 ** 31),
+      (team, level, world) => new BattleBot(team, level, world),
+    );
     this.status = 'playing';
     this.pushState();
     for (const p of this.members.values()) {
@@ -323,7 +343,9 @@ export class Room {
     const perTeam = new Map<number, GameServerMsg[]>();
     for (const r of step.results) {
       const list = perTeam.get(r.team) ?? [];
-      list.push(r.reason === null ? { t: 'ack', seq: r.seq, tick: r.tick } : { t: 'reject', seq: r.seq, reason: r.reason });
+      list.push(
+        r.reason === null ? { t: 'ack', seq: r.seq, tick: r.tick } : { t: 'reject', seq: r.seq, reason: r.reason },
+      );
       perTeam.set(r.team, list);
     }
     // Deltas are computed once per viewing team (players of a team share a view).

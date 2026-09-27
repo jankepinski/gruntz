@@ -165,7 +165,10 @@ export function castSpell(w: World, caster: Grunt, spell: SpellId): void {
       const free: Point[] = [];
       for (let y = 0; y < w.height; y++)
         for (let x = 0; x < w.width; x++)
-          if ((w.traits(x, y) & (T.SOLID | T.NOGO | T.WATER | T.DEATH | T.HOLE | T.PAIN | T.ARROW)) === 0 && !w.gruntAt(x, y))
+          if (
+            (w.traits(x, y) & (T.SOLID | T.NOGO | T.WATER | T.DEATH | T.HOLE | T.PAIN | T.ARROW)) === 0 &&
+            !w.gruntAt(x, y)
+          )
             free.push({ x, y });
       if (free.length > 0) {
         const to = free[w.randomInt(free.length)]!;

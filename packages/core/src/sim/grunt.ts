@@ -409,7 +409,12 @@ export function stopGrunt(w: World, g: Grunt): void {
 
 // --- movement ---------------------------------------------------------------------------
 
-export function move(w: World, g: Grunt, to: Point, opts: { run?: boolean; jump?: boolean; forced?: boolean } = {}): boolean {
+export function move(
+  w: World,
+  g: Grunt,
+  to: Point,
+  opts: { run?: boolean; jump?: boolean; forced?: boolean } = {},
+): boolean {
   if (g.action.kind === 'win') return false;
   const dx = Math.abs(to.x - g.x);
   const dy = Math.abs(to.y - g.y);

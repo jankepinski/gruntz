@@ -44,10 +44,12 @@ export class TickClock {
 
   update(dtMs: number, paused: boolean): void {
     if (paused) return;
-    const target = this.latest + 1 - this.buffer + Math.min(1, ((performance.now() - this.latestAt) * this.speed) / TICK_MS);
+    const target =
+      this.latest + 1 - this.buffer + Math.min(1, ((performance.now() - this.latestAt) * this.speed) / TICK_MS);
     let next = this.renderTick + (dtMs * this.speed) / TICK_MS;
     const diff = target - next;
-    if (Math.abs(diff) > 10) next = target; // way off (tab switch): snap
+    if (Math.abs(diff) > 10)
+      next = target; // way off (tab switch): snap
     else next += diff * 0.1;
     this.renderTick = Math.min(next, this.latest + 1);
   }

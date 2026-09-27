@@ -232,12 +232,7 @@ export interface StepChoice {
  * Picks the next tile to step on, following the original getWalkTarget rules.
  * Returns undefined when arrived or blocked.
  */
-export function chooseStep(
-  w: World,
-  grunt: Grunt,
-  flood: Flood,
-  useItem: boolean,
-): StepChoice | undefined {
+export function chooseStep(w: World, grunt: Grunt, flood: Flood, useItem: boolean): StepChoice | undefined {
   const here = { x: grunt.x, y: grunt.y };
   const weight = flood.get(here);
   if (weight === 0) return undefined;

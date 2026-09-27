@@ -45,11 +45,23 @@ export class EditorView {
         new THREE.Vector3(1, 0, 1),
         new THREE.Vector3(0, 0, 1),
       ]);
-    this.cursor = new THREE.LineLoop(square(), new THREE.LineBasicMaterial({ color: 0xffffff, depthTest: false, transparent: true }));
-    this.selection = new THREE.LineLoop(square(), new THREE.LineBasicMaterial({ color: 0xffd84a, depthTest: false, transparent: true }));
+    this.cursor = new THREE.LineLoop(
+      square(),
+      new THREE.LineBasicMaterial({ color: 0xffffff, depthTest: false, transparent: true }),
+    );
+    this.selection = new THREE.LineLoop(
+      square(),
+      new THREE.LineBasicMaterial({ color: 0xffd84a, depthTest: false, transparent: true }),
+    );
     this.partnerLines = new THREE.LineSegments(
       new THREE.BufferGeometry(),
-      new THREE.LineDashedMaterial({ color: 0xffa040, dashSize: 0.2, gapSize: 0.12, depthTest: false, transparent: true }),
+      new THREE.LineDashedMaterial({
+        color: 0xffa040,
+        dashSize: 0.2,
+        gapSize: 0.12,
+        depthTest: false,
+        transparent: true,
+      }),
     );
     for (const o of [this.cursor, this.selection, this.partnerLines]) o.renderOrder = 7;
     this.overlay.add(this.cursor, this.selection, this.markers, this.issuePins, this.partnerLines);
@@ -138,7 +150,8 @@ export class EditorView {
     }
     // Objects can change tiles (brickz); keep the terrain in step without a full rebuild.
     const changes: [number, number][] = [];
-    for (let i = 0; i < world.tiles.length; i++) if (world.tiles[i] !== this.world.tiles[i]) changes.push([i, world.tiles[i]!]);
+    for (let i = 0; i < world.tiles.length; i++)
+      if (world.tiles[i] !== this.world.tiles[i]) changes.push([i, world.tiles[i]!]);
     this.renderer.entities.dispose();
     this.world = world;
     if (changes.length) this.renderer.terrain?.updateTiles(changes);
@@ -153,7 +166,8 @@ export class EditorView {
     for (const o of this.model.doc.objects) {
       if (o.type === 'brickz') owned.set(o.y * w.width + o.x, tileId('BRICKZ'));
       if (o.type === 'giantRock')
-        for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) owned.set((o.y + dy) * w.width + o.x + dx, tileId('GIANT_ROCK'));
+        for (let dy = -1; dy <= 1; dy++)
+          for (let dx = -1; dx <= 1; dx++) owned.set((o.y + dy) * w.width + o.x + dx, tileId('GIANT_ROCK'));
     }
     for (const p of points) {
       const name = this.model.tileAt(p.x, p.y);
@@ -178,7 +192,10 @@ export class EditorView {
     for (let y = 0; y <= w.height; y++) pts.push(0, OVERLAY_Y - 0.03, y, w.width, OVERLAY_Y - 0.03, y);
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
-    this.grid = new THREE.LineSegments(geo, new THREE.LineBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.18, depthWrite: false }));
+    this.grid = new THREE.LineSegments(
+      geo,
+      new THREE.LineBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.18, depthWrite: false }),
+    );
     this.grid.renderOrder = 3;
     this.overlay.add(this.grid);
   }
@@ -277,7 +294,8 @@ export class EditorView {
     this.partnerLines.visible = partners.length > 0;
     if (!from || !partners.length) return;
     const pts: THREE.Vector3[] = [];
-    for (const p of partners) pts.push(new THREE.Vector3(from.x + 0.5, 0.35, from.y + 0.5), new THREE.Vector3(p.x + 0.5, 0.35, p.y + 0.5));
+    for (const p of partners)
+      pts.push(new THREE.Vector3(from.x + 0.5, 0.35, from.y + 0.5), new THREE.Vector3(p.x + 0.5, 0.35, p.y + 0.5));
     this.partnerLines.geometry.dispose();
     this.partnerLines.geometry = new THREE.BufferGeometry().setFromPoints(pts);
     this.partnerLines.computeLineDistances();
@@ -300,13 +318,22 @@ export class EditorView {
     this.model.doc.objects.forEach(o => {
       let mesh: THREE.Mesh | null = null;
       if (o.type === 'secret') {
-        mesh = new THREE.Mesh(diamond.clone(), new THREE.MeshBasicMaterial({ color: 0xc070ff, transparent: true, opacity: 0.9, depthTest: false }));
+        mesh = new THREE.Mesh(
+          diamond.clone(),
+          new THREE.MeshBasicMaterial({ color: 0xc070ff, transparent: true, opacity: 0.9, depthTest: false }),
+        );
         mesh.position.set(o.x + 0.5, this.heightAt(o.x, o.y) + 0.35, o.y + 0.5);
       } else if (o.type === 'pickup' && o.hidden) {
-        mesh = new THREE.Mesh(ring.clone(), new THREE.MeshBasicMaterial({ color: 0xffe070, transparent: true, opacity: 0.8, depthTest: false }));
+        mesh = new THREE.Mesh(
+          ring.clone(),
+          new THREE.MeshBasicMaterial({ color: 0xffe070, transparent: true, opacity: 0.8, depthTest: false }),
+        );
         mesh.position.set(o.x + 0.5, this.heightAt(o.x, o.y) + 0.02, o.y + 0.5);
       } else if (o.type === 'grunt' && o.ai) {
-        mesh = new THREE.Mesh(ring.clone(), new THREE.MeshBasicMaterial({ color: 0xff5a4a, transparent: true, opacity: 0.55, depthTest: false }));
+        mesh = new THREE.Mesh(
+          ring.clone(),
+          new THREE.MeshBasicMaterial({ color: 0xff5a4a, transparent: true, opacity: 0.55, depthTest: false }),
+        );
         mesh.position.set(o.x + 0.5, this.heightAt(o.x, o.y) + 0.02, o.y + 0.5);
       }
       if (mesh) {
@@ -377,5 +404,7 @@ export class EditorView {
 
 export function isTyping(e: Event): boolean {
   const el = e.target as HTMLElement | null;
-  return !!el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable);
+  return (
+    !!el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable)
+  );
 }

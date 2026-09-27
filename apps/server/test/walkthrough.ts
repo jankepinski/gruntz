@@ -66,9 +66,13 @@ export class Walkthrough {
       }
       for (const res of r.results) {
         if (!res.reason) continue;
-        const who = [...this.w.all('grunt')].map(g => `#${g.id}@${g.x},${g.y} team=${g.team} ai=${g.ai} ${g.action.kind}`).join('; ');
+        const who = [...this.w.all('grunt')]
+          .map(g => `#${g.id}@${g.x},${g.y} team=${g.team} ai=${g.ai} ${g.action.kind}`)
+          .join('; ');
         const deaths = this.log.filter(l => l.includes('died'));
-        throw new Error(`${this.level.id}: command rejected (${res.reason})\n${this.log.slice(-6).join('\n')}\n${who}\n${deaths.join('\n')}`);
+        throw new Error(
+          `${this.level.id}: command rejected (${res.reason})\n${this.log.slice(-6).join('\n')}\n${who}\n${deaths.join('\n')}`,
+        );
       }
     }
   }
@@ -84,13 +88,17 @@ export class Walkthrough {
     const max = msToTicks(maxMs);
     for (let i = 0; i < max; i++) {
       if (pred()) return;
-      if (this.session.end && this.session.end.winner !== 0) throw new Error(`${this.level.id}: lost while waiting for ${label}\n${this.log.slice(-6).join('\n')}`);
+      if (this.session.end && this.session.end.winner !== 0)
+        throw new Error(`${this.level.id}: lost while waiting for ${label}\n${this.log.slice(-6).join('\n')}`);
       this.step();
     }
     const ours = [...this.w.all('grunt')].map(
-      g => `#${g.id}@${g.x},${g.y} team=${g.team} ${g.action.kind} tool=${g.tool} hp=${g.health} task=${JSON.stringify(g.task)} orders=${g.orders.length}`,
+      g =>
+        `#${g.id}@${g.x},${g.y} team=${g.team} ${g.action.kind} tool=${g.tool} hp=${g.health} task=${JSON.stringify(g.task)} orders=${g.orders.length}`,
     );
-    throw new Error(`${this.level.id}: timed out waiting for ${label}\n${ours.join('\n')}\n${this.log.slice(-6).join('\n')}`);
+    throw new Error(
+      `${this.level.id}: timed out waiting for ${label}\n${ours.join('\n')}\n${this.log.slice(-6).join('\n')}`,
+    );
   }
 
   wait(ms: number): void {
@@ -113,14 +121,20 @@ export class Walkthrough {
   /** Walk several gruntz to their own tiles at once. */
   moveAll(moves: [EntityId, number, number][]): void {
     for (const [id, x, y] of moves) this.cmd({ type: 'move', ids: [id], x, y });
-    this.until(() => moves.every(([id, x, y]) => this.grunt(id).x === x && this.grunt(id).y === y && this.settled(id)), 'group move');
+    this.until(
+      () => moves.every(([id, x, y]) => this.grunt(id).x === x && this.grunt(id).y === y && this.settled(id)),
+      'group move',
+    );
   }
 
   /** Use the grunt's tool on a tile and wait until the tile changes. */
   tool(id: EntityId, x: number, y: number, done?: () => boolean): void {
     const before = this.w.tileAt(x, y);
     this.cmd({ type: 'useTool', ids: [id], x, y });
-    this.until(done ?? (() => this.w.tileAt(x, y) !== before && this.settled(id)), `#${id} to use ${this.grunt(id).tool} on ${x},${y}`);
+    this.until(
+      done ?? (() => this.w.tileAt(x, y) !== before && this.settled(id)),
+      `#${id} to use ${this.grunt(id).tool} on ${x},${y}`,
+    );
   }
 
   /** Suck up a goo puddle with the goober straw. */
@@ -165,18 +179,22 @@ export class Walkthrough {
     if (!this.w.get(target, 'grunt') || this.grunt(target).action.kind === 'death') return;
     this.cmd({ type: 'attack', ids, target });
     let lastOrder = this.w.tick;
-    this.until(() => {
-      if (!this.w.get(target, 'grunt')) return true;
-      const enemy = this.grunt(target);
-      if (enemy.action.kind === 'death') return false;
-      // A toy or a knockback makes a grunt forget the order: click again, like a player.
-      const idle = ids.filter(id => this.w.get(id, 'grunt') && this.settled(id));
-      if (idle.length && this.w.tick - lastOrder > 40) {
-        this.session.submit(0, { type: 'attack', ids: idle, target });
-        lastOrder = this.w.tick;
-      }
-      return false;
-    }, `#${target} to be defeated`, 180_000);
+    this.until(
+      () => {
+        if (!this.w.get(target, 'grunt')) return true;
+        const enemy = this.grunt(target);
+        if (enemy.action.kind === 'death') return false;
+        // A toy or a knockback makes a grunt forget the order: click again, like a player.
+        const idle = ids.filter(id => this.w.get(id, 'grunt') && this.settled(id));
+        if (idle.length && this.w.tick - lastOrder > 40) {
+          this.session.submit(0, { type: 'attack', ids: idle, target });
+          lastOrder = this.w.tick;
+        }
+        return false;
+      },
+      `#${target} to be defeated`,
+      180_000,
+    );
   }
 
   attack(id: EntityId, target: EntityId): void {
@@ -186,12 +204,16 @@ export class Walkthrough {
   pickup(id: EntityId, x: number, y: number, item: string): void {
     this.move(id, x, y);
     const g = this.grunt(id);
-    if (g.tool !== item && g.toy !== item && g.powerup !== item) throw new Error(`${this.level.id}: #${id} did not pick up ${item} at ${x},${y}`);
+    if (g.tool !== item && g.toy !== item && g.powerup !== item)
+      throw new Error(`${this.level.id}: #${id} did not pick up ${item} at ${x},${y}`);
   }
 
   /** Wait for a rolling boulder in row y to pass column x, then walk across to (x, toY). */
   crossBoulders(id: EntityId, x: number, y: number, toY: number): void {
-    this.until(() => [...this.w.all('ball')].some(b => b.y === y && b.state === 'roll' && b.x < x - 1), `a boulder to pass ${x},${y}`);
+    this.until(
+      () => [...this.w.all('ball')].some(b => b.y === y && b.state === 'roll' && b.x < x - 1),
+      `a boulder to pass ${x},${y}`,
+    );
     this.move(id, x, toY);
   }
 
@@ -220,10 +242,14 @@ export class Walkthrough {
 
   /** Wait until the spotlight is far from a point. */
   waitSpot(x: number, y: number, dist: number): void {
-    this.until(() => [...this.w.all('spotlight')].every(s => {
-      const p = spotPosition(s, this.w.tick);
-      return Math.hypot(p.x - x, p.y - y) > dist;
-    }), `the spotlight away from ${x},${y}`);
+    this.until(
+      () =>
+        [...this.w.all('spotlight')].every(s => {
+          const p = spotPosition(s, this.w.tick);
+          return Math.hypot(p.x - x, p.y - y) > dist;
+        }),
+      `the spotlight away from ${x},${y}`,
+    );
   }
 
   /** Wait until every slime satisfies a condition on its tile. */
@@ -242,10 +268,14 @@ export class Walkthrough {
 
   /** Wait until every UFO beam is far from a point. */
   waitUfo(x: number, y: number, dist: number): void {
-    this.until(() => [...this.w.all('ufo')].every(u => {
-      const c = pathPosition(u, this.w.tick);
-      return Math.hypot(c.x - x, c.y - y) > dist;
-    }), `the UFO away from ${x},${y}`);
+    this.until(
+      () =>
+        [...this.w.all('ufo')].every(u => {
+          const c = pathPosition(u, this.w.tick);
+          return Math.hypot(c.x - x, c.y - y) > dist;
+        }),
+      `the UFO away from ${x},${y}`,
+    );
   }
 
   /** Carry the warpstone to a fort tile and win. */

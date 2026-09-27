@@ -40,7 +40,13 @@ export interface HazardView {
 
 const FLY_HEIGHT = 3.4;
 const glow = (color: number, opacity = 1) =>
-  new THREE.MeshBasicMaterial({ color, transparent: opacity < 1, opacity, depthWrite: opacity >= 1, toneMapped: false });
+  new THREE.MeshBasicMaterial({
+    color,
+    transparent: opacity < 1,
+    opacity,
+    depthWrite: opacity >= 1,
+    toneMapped: false,
+  });
 
 function at(x: number, y: number, h = 0): THREE.Vector3 {
   return new THREE.Vector3(x + 0.5, h, y + 0.5);
@@ -48,7 +54,10 @@ function at(x: number, y: number, h = 0): THREE.Vector3 {
 
 /** A soft dark disc under things that fly (in the original you saw their shadows). */
 function groundShadow(radius: number, opacity = 0.28): THREE.Mesh {
-  const m = new THREE.Mesh(new THREE.CircleGeometry(radius, 24).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity, depthWrite: false }));
+  const m = new THREE.Mesh(
+    new THREE.CircleGeometry(radius, 24).rotateX(-Math.PI / 2),
+    new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity, depthWrite: false }),
+  );
   m.renderOrder = 2;
   return m;
 }
@@ -77,7 +86,6 @@ const LAVA = LIQUID.tropics!;
 const LAVA_HOT = new THREE.Color(LAVA.hot);
 const LAVA_WHITE = new THREE.Color(LAVA.hot).lerp(new THREE.Color(0xffd070), 0.55);
 const LAVA_CRUST = new THREE.Color(LAVA.crust);
-
 
 interface Blob {
   pos: THREE.Vector3;
@@ -125,7 +133,12 @@ class LavaFountain {
     this.blobMesh.count = 0;
     this.blobMesh.frustumCulled = false;
     this.blobMesh.setColorAt(0, new THREE.Color());
-    const splatMat = new THREE.MeshBasicMaterial({ color: 0xffffff, toneMapped: false, transparent: true, depthWrite: false });
+    const splatMat = new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      toneMapped: false,
+      transparent: true,
+      depthWrite: false,
+    });
     this.splatMesh = new THREE.InstancedMesh(new THREE.CircleGeometry(1, 12).rotateX(-Math.PI / 2), splatMat, 48);
     this.splatMesh.count = 0;
     this.splatMesh.frustumCulled = false;
@@ -135,7 +148,13 @@ class LavaFountain {
     for (let i = 0; i < 10; i++) {
       const mesh = new THREE.Mesh(
         new THREE.IcosahedronGeometry(1, 2),
-        new THREE.MeshStandardMaterial({ color: 0x8a7e76, roughness: 1, transparent: true, opacity: 0, depthWrite: false }),
+        new THREE.MeshStandardMaterial({
+          color: 0x8a7e76,
+          roughness: 1,
+          transparent: true,
+          opacity: 0,
+          depthWrite: false,
+        }),
       );
       mesh.visible = false;
       this.group.add(mesh);
@@ -197,7 +216,8 @@ class LavaFountain {
       if (b.ember) b.vel.x += 0.3 * dt;
       b.pos.addScaledVector(b.vel, dt);
       if (!b.ember && b.pos.y <= 0.02 && b.vel.y < 0) {
-        if (this.splats.length < 48 && b.size > 0.03) this.splats.push({ x: b.pos.x, z: b.pos.z, life: 0, max: 0.9 + Math.random() * 0.5, size: b.size * 1.6 });
+        if (this.splats.length < 48 && b.size > 0.03)
+          this.splats.push({ x: b.pos.x, z: b.pos.z, life: 0, max: 0.9 + Math.random() * 0.5, size: b.size * 1.6 });
         return false;
       }
       return b.life < b.max;
@@ -211,8 +231,16 @@ class LavaFountain {
       this.blobMesh.setMatrixAt(n, this.m);
       // cools from white-hot through orange to dark crust
       const cool = b.ember ? b.life / b.max : Math.min(1, b.life / 2.4);
-      if (cool < 0.3) this.c.copy(LAVA_WHITE).lerp(LAVA_HOT, cool / 0.3).multiplyScalar(2.2 - cool * 1.5);
-      else this.c.copy(LAVA_HOT).multiplyScalar(2.3 - cool * 1.6).lerp(LAVA_CRUST, Math.max(0, cool - 0.6) * 1.5);
+      if (cool < 0.3)
+        this.c
+          .copy(LAVA_WHITE)
+          .lerp(LAVA_HOT, cool / 0.3)
+          .multiplyScalar(2.2 - cool * 1.5);
+      else
+        this.c
+          .copy(LAVA_HOT)
+          .multiplyScalar(2.3 - cool * 1.6)
+          .lerp(LAVA_CRUST, Math.max(0, cool - 0.6) * 1.5);
       this.blobMesh.setColorAt(n, this.c);
       n++;
     }
@@ -224,9 +252,16 @@ class LavaFountain {
     this.splats = this.splats.filter(sp => (sp.life += dt) < sp.max);
     for (const sp of this.splats) {
       const f = sp.life / sp.max;
-      this.m.compose(new THREE.Vector3(sp.x, 0.015, sp.z), new THREE.Quaternion(), new THREE.Vector3(sp.size * (1 + f * 0.4), 1, sp.size * (1 + f * 0.4)));
+      this.m.compose(
+        new THREE.Vector3(sp.x, 0.015, sp.z),
+        new THREE.Quaternion(),
+        new THREE.Vector3(sp.size * (1 + f * 0.4), 1, sp.size * (1 + f * 0.4)),
+      );
       this.splatMesh.setMatrixAt(k, this.m);
-      this.c.copy(LAVA_HOT).multiplyScalar(2.2 * (1 - f) + 0.2).lerp(LAVA_CRUST, f * f);
+      this.c
+        .copy(LAVA_HOT)
+        .multiplyScalar(2.2 * (1 - f) + 0.2)
+        .lerp(LAVA_CRUST, f * f);
       this.splatMesh.setColorAt(k, this.c);
       k++;
     }
@@ -241,7 +276,8 @@ class LavaFountain {
       p.mesh.position.addScaledVector(p.vel, dt);
       p.vel.multiplyScalar(1 - dt * 0.6);
       p.mesh.scale.setScalar(p.size * (1 + f * 2.2));
-      (p.mesh.material as THREE.MeshStandardMaterial).opacity = 0.3 * Math.sin(Math.min(1, f * 1.2) * Math.PI) * (1 - f * 0.5);
+      (p.mesh.material as THREE.MeshStandardMaterial).opacity =
+        0.3 * Math.sin(Math.min(1, f * 1.2) * Math.PI) * (1 - f * 0.5);
       if (p.life >= p.max) p.mesh.visible = false;
     }
   }
@@ -307,24 +343,36 @@ export class StaticHazardView implements HazardView {
       }
       case 'candle':
       case 'mortar': {
-        this.flame = new THREE.Mesh(new THREE.SphereGeometry(0.09, 12, 8).scale(1, 2, 1).translate(0, 0.12, 0), glow(0xffb040, 0.95));
+        this.flame = new THREE.Mesh(
+          new THREE.SphereGeometry(0.09, 12, 8).scale(1, 2, 1).translate(0, 0.12, 0),
+          glow(0xffb040, 0.95),
+        );
         this.flame.position.y = this.style === 'candle' ? 0.92 : 0.66;
         this.effect.add(this.flame);
         for (let i = 0; i < 10; i++) {
-          const b = new THREE.Mesh(new THREE.SphereGeometry(0.05, 8, 6), glow([0xff4a8a, 0xffd23a, 0x6ad8ff, 0x9aff6a][i % 4]!));
+          const b = new THREE.Mesh(
+            new THREE.SphereGeometry(0.05, 8, 6),
+            glow([0xff4a8a, 0xffd23a, 0x6ad8ff, 0x9aff6a][i % 4]!),
+          );
           this.burst.push(b);
           this.effect.add(b);
         }
         break;
       }
       case 'outlet': {
-        this.sparks = new THREE.LineSegments(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: 0xbfeeff, transparent: true, toneMapped: false }));
+        this.sparks = new THREE.LineSegments(
+          new THREE.BufferGeometry(),
+          new THREE.LineBasicMaterial({ color: 0xbfeeff, transparent: true, toneMapped: false }),
+        );
         this.effect.add(this.sparks);
         break;
       }
       case 'trapdoor':
         // The ground slab covers the modelled shaft, so an opening trapdoor shows a dark pit.
-        this.pit = new THREE.Mesh(new THREE.PlaneGeometry(0.84, 0.84).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0x050404 }));
+        this.pit = new THREE.Mesh(
+          new THREE.PlaneGeometry(0.84, 0.84).rotateX(-Math.PI / 2),
+          new THREE.MeshBasicMaterial({ color: 0x050404 }),
+        );
         this.pit.position.y = 0.012;
         this.effect.add(this.pit);
         break;
@@ -348,11 +396,15 @@ export class StaticHazardView implements HazardView {
       case 'geyser': {
         // Warning: the last 1.4 s before an eruption the vent starts to bubble and glow.
         const cycle = h.period + msToTicks(STATIC_COOLDOWN_MS);
-        const warning = h.active ? 0 : THREE.MathUtils.clamp(1 - (cycle - (ctx.tick - h.since)) / msToTicks(1400), 0, 1);
+        const warning = h.active
+          ? 0
+          : THREE.MathUtils.clamp(1 - (cycle - (ctx.tick - h.since)) / msToTicks(1400), 0, 1);
         const eruption = h.active ? Math.min(1, t * 6) * (1 - THREE.MathUtils.smoothstep(t, 0.75, 1)) : 0;
         this.fountain!.update(ctx.dt, eruption, warning);
         // Charge: builds up over the quiet part of the cycle, drains while it erupts.
-        const charge = h.active ? 1 - t * 0.85 : Math.pow(THREE.MathUtils.clamp((ctx.tick - h.since) / Math.max(1, cycle), 0, 1), 1.3);
+        const charge = h.active
+          ? 1 - t * 0.85
+          : Math.pow(THREE.MathUtils.clamp((ctx.tick - h.since) / Math.max(1, cycle), 0, 1), 1.3);
         if (this.vent) {
           this.vent.userData.time.value = ctx.time;
           this.vent.userData.charge.value = charge;
@@ -379,7 +431,9 @@ export class StaticHazardView implements HazardView {
       }
       case 'trapdoor': {
         // Doors swing open while the trapdoor is active.
-        const open = h.active ? THREE.MathUtils.smoothstep(t, 0, 0.25) * (1 - THREE.MathUtils.smoothstep(t, 0.8, 1)) : 0;
+        const open = h.active
+          ? THREE.MathUtils.smoothstep(t, 0, 0.25) * (1 - THREE.MathUtils.smoothstep(t, 0.8, 1))
+          : 0;
         // Hinges run along z at the outer edges; the doors drop into the pit.
         this.doors.forEach((d, i) => (d.rotation.z = (i === 0 ? -1 : 1) * open * 1.9));
         this.pit!.visible = open > 0.02;
@@ -464,7 +518,10 @@ export class PoopView implements HazardView {
     this.thing = model?.root ?? new THREE.Mesh(new THREE.SphereGeometry(0.16, 12, 8), mat(0x6a4020));
     this.warn = new THREE.Mesh(new THREE.RingGeometry(0.3, 0.42, 28).rotateX(-Math.PI / 2), glow(0xff3a2a, 0.8));
     this.warn.renderOrder = 3;
-    this.splat = new THREE.Mesh(new THREE.CircleGeometry(0.42, 16).rotateX(-Math.PI / 2), mat(name === 'coconut' ? 0x7a5a3a : 0xc86ad8));
+    this.splat = new THREE.Mesh(
+      new THREE.CircleGeometry(0.42, 16).rotateX(-Math.PI / 2),
+      mat(name === 'coconut' ? 0x7a5a3a : 0xc86ad8),
+    );
     this.splat.visible = false;
     this.object.add(this.thing, this.warn, this.splat);
   }
@@ -499,7 +556,9 @@ export class CloudView implements HazardView {
   private nextBolt = 0;
 
   constructor() {
-    this.cloud = createHazard('cloud')?.root ?? new THREE.Mesh(new THREE.SphereGeometry(0.7, 16, 10).scale(1.3, 0.6, 1), mat(0x5a5e6a));
+    this.cloud =
+      createHazard('cloud')?.root ??
+      new THREE.Mesh(new THREE.SphereGeometry(0.7, 16, 10).scale(1.3, 0.6, 1), mat(0x5a5e6a));
     const drops: number[] = [];
     for (let i = 0; i < 40; i++) {
       const x = (Math.random() - 0.5) * 1.4;
@@ -509,8 +568,14 @@ export class CloudView implements HazardView {
     }
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.Float32BufferAttribute(drops, 3));
-    this.rain = new THREE.LineSegments(geo, new THREE.LineBasicMaterial({ color: 0x9ab8e8, transparent: true, opacity: 0.6 }));
-    this.bolt = new THREE.Line(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: 0xf8ffff, toneMapped: false }));
+    this.rain = new THREE.LineSegments(
+      geo,
+      new THREE.LineBasicMaterial({ color: 0x9ab8e8, transparent: true, opacity: 0.6 }),
+    );
+    this.bolt = new THREE.Line(
+      new THREE.BufferGeometry(),
+      new THREE.LineBasicMaterial({ color: 0xf8ffff, toneMapped: false }),
+    );
     this.light.position.y = 1.5;
     this.object.add(this.cloud, this.rain, this.bolt, this.shadow, this.light);
   }
@@ -561,10 +626,15 @@ export class UfoView implements HazardView {
   private shadow = groundShadow(0.7);
 
   constructor() {
-    this.ship = createHazard('ufo')?.root ?? new THREE.Mesh(new THREE.SphereGeometry(0.6, 20, 10).scale(1, 0.25, 1), mat(0xb8c0cc, 0.3, 0.7));
+    this.ship =
+      createHazard('ufo')?.root ??
+      new THREE.Mesh(new THREE.SphereGeometry(0.6, 20, 10).scale(1, 0.25, 1), mat(0xb8c0cc, 0.3, 0.7));
     this.object.add(this.ship, this.shadow);
     for (let i = 0; i < 2; i++) {
-      const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.34, 1, 16, 1, true).translate(0, -0.5, 0), glow(0x9aff6a, 0.22));
+      const beam = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.06, 0.34, 1, 16, 1, true).translate(0, -0.5, 0),
+        glow(0x9aff6a, 0.22),
+      );
       beam.material.side = THREE.DoubleSide;
       const spot = new THREE.Mesh(new THREE.CircleGeometry(0.36, 20).rotateX(-Math.PI / 2), glow(0xb8ff8a, 0.5));
       spot.renderOrder = 3;
@@ -605,7 +675,10 @@ export class SpotLightView implements HazardView {
   private light = new THREE.SpotLight(0xfff2c0, 20, 12, 0.22, 0.5, 1.5);
 
   constructor() {
-    this.cone = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.5, 1, 20, 1, true).translate(0, -0.5, 0), glow(0xfff2c0, 0.16));
+    this.cone = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.05, 0.5, 1, 20, 1, true).translate(0, -0.5, 0),
+      glow(0xfff2c0, 0.16),
+    );
     (this.cone.material as THREE.Material).side = THREE.DoubleSide;
     this.spot = new THREE.Mesh(new THREE.CircleGeometry(0.5, 28).rotateX(-Math.PI / 2), glow(0xfff6d8, 0.45));
     this.spot.renderOrder = 3;
@@ -637,7 +710,14 @@ export class SlimeView implements HazardView {
   private drops: THREE.Mesh[] = [];
 
   constructor() {
-    const m = new THREE.MeshStandardMaterial({ color: 0x7ad83a, roughness: 0.25, emissive: 0x2a6a10, emissiveIntensity: 0.6, transparent: true, opacity: 0.9 });
+    const m = new THREE.MeshStandardMaterial({
+      color: 0x7ad83a,
+      roughness: 0.25,
+      emissive: 0x2a6a10,
+      emissiveIntensity: 0.6,
+      transparent: true,
+      opacity: 0.9,
+    });
     this.blob = new THREE.Mesh(new THREE.SphereGeometry(0.34, 20, 14), m);
     this.blob.castShadow = true;
     this.object.add(this.blob);

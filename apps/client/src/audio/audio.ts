@@ -105,7 +105,15 @@ class AudioEngine {
     g.gain.exponentialRampToValueAtTime(0.0001, t + a + d);
   }
 
-  private tone(type: OscillatorType, f0: number, f1: number, dur: number, vol: number, out: AudioNode, delay = 0): void {
+  private tone(
+    type: OscillatorType,
+    f0: number,
+    f1: number,
+    dur: number,
+    vol: number,
+    out: AudioNode,
+    delay = 0,
+  ): void {
     const ctx = this.ctx!;
     const t = ctx.currentTime + delay;
     const o = ctx.createOscillator();
@@ -119,7 +127,16 @@ class AudioEngine {
     o.stop(t + dur + 0.05);
   }
 
-  private noiseBurst(dur: number, vol: number, filter: BiquadFilterType, f0: number, f1: number, out: AudioNode, delay = 0, q = 1): void {
+  private noiseBurst(
+    dur: number,
+    vol: number,
+    filter: BiquadFilterType,
+    f0: number,
+    f1: number,
+    out: AudioNode,
+    delay = 0,
+    q = 1,
+  ): void {
     const ctx = this.ctx!;
     const t = ctx.currentTime + delay;
     const src = ctx.createBufferSource();
@@ -351,7 +368,9 @@ class AudioEngine {
     const bpm = theme === 'rollerz' ? 128 : theme === 'space' ? 96 : 112;
     const stepDur = 60 / bpm / 2;
     const midi = (n: number) => 440 * 2 ** ((n - 69) / 12);
-    const pattern = Array.from({ length: 32 }, () => (Math.random() < 0.55 ? scale[Math.floor(Math.random() * scale.length)]! : -1));
+    const pattern = Array.from({ length: 32 }, () =>
+      Math.random() < 0.55 ? scale[Math.floor(Math.random() * scale.length)]! : -1,
+    );
     const bassLine = [0, 0, 5, 5, 3, 3, 4, 4].map(i => scale[i % scale.length]!);
     let next = this.ctx.currentTime + 0.1;
     const schedule = () => {
@@ -368,7 +387,9 @@ class AudioEngine {
         this.musicStep++;
         // Every 64 steps, mutate the melody a little so it doesn't get boring.
         if (this.musicStep % 64 === 0) {
-          for (let k = 0; k < 6; k++) pattern[Math.floor(Math.random() * 32)] = Math.random() < 0.5 ? scale[Math.floor(Math.random() * scale.length)]! : -1;
+          for (let k = 0; k < 6; k++)
+            pattern[Math.floor(Math.random() * 32)] =
+              Math.random() < 0.5 ? scale[Math.floor(Math.random() * scale.length)]! : -1;
         }
       }
     };

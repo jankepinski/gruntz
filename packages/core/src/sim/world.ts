@@ -1,21 +1,23 @@
 import { T, tileDef, toggledTile } from '../data/tiles.ts';
 import type { Point } from '../point.ts';
 import { nextRandom } from '../rng.ts';
-import type { DeathKind, Entity, EntityId, EntityKind, EntityOf, Fort, Fx, Grunt, RollingBall, TeamState } from './types.ts';
+import type {
+  DeathKind,
+  Entity,
+  EntityId,
+  EntityKind,
+  EntityOf,
+  Fort,
+  Fx,
+  Grunt,
+  RollingBall,
+  TeamState,
+} from './types.ts';
 
 export type GameMode = 'quest' | 'battle';
 
 /** World theme. Each has its own terrain kit and its own way of dying in the abyss. */
-export type ThemeId =
-  | 'training'
-  | 'rocky'
-  | 'ice'
-  | 'tropics'
-  | 'sweetz'
-  | 'rollerz'
-  | 'shrunk'
-  | 'minis'
-  | 'space';
+export type ThemeId = 'training' | 'rocky' | 'ice' | 'tropics' | 'sweetz' | 'rollerz' | 'shrunk' | 'minis' | 'space';
 
 export const THEME_DEATH: Record<ThemeId, DeathKind> = {
   training: 'SINK',
@@ -107,7 +109,6 @@ const TILE_OBJECT_KINDS: ReadonlySet<EntityKind> = new Set([
   'help',
   'trigger',
 ]);
-
 
 export class World {
   tick = 0;
@@ -310,7 +311,8 @@ export class World {
       for (let dy = -1; dy <= 1; dy++)
         for (let dx = -1; dx <= 1; dx++) if (dx || dy) this.detachFromTile(e.id, this.index(e.x + dx, e.y + dy));
     } else if (e.kind === 'giantrock') {
-      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) this.detachFromTile(e.id, this.index(e.x + dx, e.y + dy));
+      for (let dy = -1; dy <= 1; dy++)
+        for (let dx = -1; dx <= 1; dx++) this.detachFromTile(e.id, this.index(e.x + dx, e.y + dy));
     } else if (TILE_OBJECT_KINDS.has(e.kind)) {
       this.detachFromTile(e.id, this.index(e.x, e.y));
     }

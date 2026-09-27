@@ -150,10 +150,12 @@ export class TerrainView {
     for (const e of w.entities.values()) {
       const r = e.kind === 'fort' || e.kind === 'giantrock' ? 1 : 0;
       if (!['hazard', 'fort', 'pad', 'wormhole', 'flag', 'help', 'giantrock', 'brickz'].includes(e.kind)) continue;
-      for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) this.bare.add((e.y + dy) * w.width + (e.x + dx));
+      for (let dy = -r; dy <= r; dy++)
+        for (let dx = -r; dx <= r; dx++) this.bare.add((e.y + dy) * w.width + (e.x + dx));
     }
     for (let y = 0; y < w.height; y++) for (let x = 0; x < w.width; x++) this.placeTile(x, y);
-    for (let cy = -PAD; cy <= this.height + PAD; cy++) for (let cx = -PAD; cx <= this.width + PAD; cx++) this.placeCell(cx, cy);
+    for (let cy = -PAD; cy <= this.height + PAD; cy++)
+      for (let cx = -PAD; cx <= this.width + PAD; cx++) this.placeCell(cx, cy);
     this.buildSurroundings();
     this.buildLiquidMask();
     this.group.add(this.kit.backdrop(w.width, w.height));
@@ -266,10 +268,18 @@ export class TerrainView {
   private placeCell(cx: number, cy: number): void {
     const i = this.cellIndex(cx, cy);
     for (const p of this.cells.get(i) ?? []) for (const s of p.slots) this.batches.get(s.batch)!.remove(s.slot);
-    const corners = [this.visual(cx, cy - 1), this.visual(cx - 1, cy - 1), this.visual(cx - 1, cy), this.visual(cx, cy)];
+    const corners = [
+      this.visual(cx, cy - 1),
+      this.visual(cx - 1, cy - 1),
+      this.visual(cx - 1, cy),
+      this.visual(cx, cy),
+    ];
     const placed: PlacedPiece[] = [];
     for (const p of this.kit.cellPieces(cx, cy, corners)) {
-      const slots = this.batchKeys(p.key, p.matrix).map(batch => ({ batch, slot: this.batches.get(batch)!.add(p.matrix, p.color) }));
+      const slots = this.batchKeys(p.key, p.matrix).map(batch => ({
+        batch,
+        slot: this.batches.get(batch)!.add(p.matrix, p.color),
+      }));
       placed.push({ key: p.key, slots, base: p.matrix.clone() });
     }
     this.cells.set(i, placed);
@@ -284,7 +294,10 @@ export class TerrainView {
       const id = `${key}#${i}@${cx},${cz}`;
       if (!this.batches.has(id)) {
         const centre = new THREE.Vector3((cx + 0.5) * CHUNK, 0, (cz + 0.5) * CHUNK);
-        this.batches.set(id, new PieceBatch(part.geometry, part.material, 16, this.group, part.castShadow, part.receiveShadow, centre));
+        this.batches.set(
+          id,
+          new PieceBatch(part.geometry, part.material, 16, this.group, part.castShadow, part.receiveShadow, centre),
+        );
       }
       return id;
     });
@@ -298,12 +311,21 @@ export class TerrainView {
   private placeTile(x: number, y: number): void {
     const i = y * this.width + x;
     for (const p of this.placed[i]!) for (const s of p.slots) this.batches.get(s.batch)!.remove(s.slot);
-    const pieces = this.kit.tilePieces(x, y, this.visual(x, y)!, (dx, dy) => this.visual(x + dx, y + dy), this.bare.has(i));
+    const pieces = this.kit.tilePieces(
+      x,
+      y,
+      this.visual(x, y)!,
+      (dx, dy) => this.visual(x + dx, y + dy),
+      this.bare.has(i),
+    );
     const placed: PlacedPiece[] = [];
     const m = new THREE.Matrix4();
     for (const p of pieces) {
       const matrix = p.lift !== undefined ? m.copy(p.matrix).multiply(this.kit.liftTransform(p.key, p.lift)) : p.matrix;
-      const slots = this.batchKeys(p.key, p.matrix).map(batch => ({ batch, slot: this.batches.get(batch)!.add(matrix, p.color) }));
+      const slots = this.batchKeys(p.key, p.matrix).map(batch => ({
+        batch,
+        slot: this.batches.get(batch)!.add(matrix, p.color),
+      }));
       const entry: PlacedPiece = { key: p.key, slots, base: p.matrix.clone() };
       if (p.lift !== undefined) entry.lift = p.lift;
       placed.push(entry);

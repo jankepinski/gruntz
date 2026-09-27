@@ -1,7 +1,19 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import type { SwitchKind, PyramidKind, ThemeId, TileVisual } from '@gruntz/core';
-import { applyClay, bedMaterial, chasmMaterial, clayMaterial, createLiquidMask, grassMaterial, groundMaterial, lavaMaterial, waterMaterial, type GroundPattern, type LiquidMask } from './materials.ts';
+import {
+  applyClay,
+  bedMaterial,
+  chasmMaterial,
+  clayMaterial,
+  createLiquidMask,
+  grassMaterial,
+  groundMaterial,
+  lavaMaterial,
+  waterMaterial,
+  type GroundPattern,
+  type LiquidMask,
+} from './materials.ts';
 import type { TerrainOptions } from './graphics.ts';
 import { models } from './models.ts';
 
@@ -45,7 +57,12 @@ export interface TileKit {
    * Decorations on a tile outside the map (the high ground around it). detail (0..1) thins
    * out the small stuff far from the playable area.
    */
-  surroundingPieces(x: number, y: number, neighbour: (dx: number, dy: number) => TileVisual | undefined, detail: number): PlacedPieceDef[];
+  surroundingPieces(
+    x: number,
+    y: number,
+    neighbour: (dx: number, dy: number) => TileVisual | undefined,
+    detail: number,
+  ): PlacedPieceDef[];
   backdrop(width: number, height: number): THREE.Object3D;
   update(time: number): void;
   dispose(): void;
@@ -350,7 +367,7 @@ function rockGeometry(seed: number): THREE.BufferGeometry {
  */
 function grassTuft(seed: number, leaves: number, height: number): THREE.BufferGeometry {
   let s = seed * 7919 + 13;
-  const rand = () => ((s = (s * 16807) % 2147483647) / 2147483647);
+  const rand = () => (s = (s * 16807) % 2147483647) / 2147483647;
   const pos: number[] = [];
   const col: number[] = [];
   const idx: number[] = [];
@@ -469,15 +486,117 @@ interface Decor {
 }
 
 const DECOR: Record<ThemeId, Decor> = {
-  training: { mid: ['stump', 'logPile', 'signpost', 'rockPile', 'mushrooms'], big: ['cottage'], tree: 'tree', bush: 'bush', tuft: 'tuft', flower: 'flower', pebbles: 'pebbles', pattern: 'grass', grass: 3, grassHeight: 0.17 },
-  rocky: { mid: ['barrel', 'wagonWheel', 'deadTree', 'rockPile'], big: ['waterTower', 'mesa'], tree: 'cactus', bush: 'dryBush', tuft: 'dryTuft', flower: 'skull', pebbles: 'pebbles', fixedFlowers: true, pattern: 'sand' },
-  ice: { mid: ['snowman', 'iceShards', 'snowRocks'], big: ['igloo'], wallHang: ['icicles'], tree: 'pine', bush: 'iceBush', tuft: 'snowTuft', flower: 'iceCrystal', pebbles: 'pebbles', fixedFlowers: true, pattern: 'snow' },
-  tropics: { mid: ['banana', 'mossRock', 'tiki', 'banana'], big: ['stiltHut'], trees: ['jungleTree', 'jungleTree', 'palm'], wallHang: ['vines', 'vinesB'], canopy: 1.45, undergrowth: 0.7, underPlants: ['fern', 'bush', 'banana', 'bigLeaves', 'bush', 'mossRock'], treeShare: 0.8, tree: 'jungleTree', bush: 'fern', tuft: 'tuft', flower: 'hibiscus', pebbles: 'lavaRocks', fixedFlowers: true, pattern: 'grass', grass: 3, grassHeight: 0.21 },
-  sweetz: { mid: ['donut', 'wrappedCandy', 'iceCream'], big: ['cupcake'], tree: 'lollipop', bush: 'gumdrops', tuft: 'sprinkles', flower: 'candyCane', pebbles: 'sprinkles', fixedFlowers: true, pattern: 'icing' },
-  rollerz: { mid: ['chipTower', 'cardHouse'], big: ['slotMachine'], tree: 'diceStack', bush: 'chips', tuft: 'card', flower: 'chips', pebbles: 'card', fixedFlowers: true, density: 0.35, pattern: 'felt' },
-  shrunk: { mid: ['spoon', 'pencil', 'button'], big: ['teacup'], tree: 'daisy', bush: 'sugarCubes', tuft: 'bladez', flower: 'flower', pebbles: 'crumbs', pattern: 'wood' },
-  minis: { mid: ['fence', 'lamppost'], big: ['modelHouse'], tree: 'modelTree', bush: 'hedge', tuft: 'tuft', flower: 'golfFlag', pebbles: 'pebbles', fixedFlowers: true, pattern: 'grass', grass: 3, grassHeight: 0.12 },
-  space: { mid: ['moonCrater', 'satellite'], big: ['rocket'], tree: 'crystalSpire', bush: 'moonRock', tuft: 'alienSprout', flower: 'alienSprout', pebbles: 'craterPebbles', fixedFlowers: true, pattern: 'moon' },
+  training: {
+    mid: ['stump', 'logPile', 'signpost', 'rockPile', 'mushrooms'],
+    big: ['cottage'],
+    tree: 'tree',
+    bush: 'bush',
+    tuft: 'tuft',
+    flower: 'flower',
+    pebbles: 'pebbles',
+    pattern: 'grass',
+    grass: 3,
+    grassHeight: 0.17,
+  },
+  rocky: {
+    mid: ['barrel', 'wagonWheel', 'deadTree', 'rockPile'],
+    big: ['waterTower', 'mesa'],
+    tree: 'cactus',
+    bush: 'dryBush',
+    tuft: 'dryTuft',
+    flower: 'skull',
+    pebbles: 'pebbles',
+    fixedFlowers: true,
+    pattern: 'sand',
+  },
+  ice: {
+    mid: ['snowman', 'iceShards', 'snowRocks'],
+    big: ['igloo'],
+    wallHang: ['icicles'],
+    tree: 'pine',
+    bush: 'iceBush',
+    tuft: 'snowTuft',
+    flower: 'iceCrystal',
+    pebbles: 'pebbles',
+    fixedFlowers: true,
+    pattern: 'snow',
+  },
+  tropics: {
+    mid: ['banana', 'mossRock', 'tiki', 'banana'],
+    big: ['stiltHut'],
+    trees: ['jungleTree', 'jungleTree', 'palm'],
+    wallHang: ['vines', 'vinesB'],
+    canopy: 1.45,
+    undergrowth: 0.7,
+    underPlants: ['fern', 'bush', 'banana', 'bigLeaves', 'bush', 'mossRock'],
+    treeShare: 0.8,
+    tree: 'jungleTree',
+    bush: 'fern',
+    tuft: 'tuft',
+    flower: 'hibiscus',
+    pebbles: 'lavaRocks',
+    fixedFlowers: true,
+    pattern: 'grass',
+    grass: 3,
+    grassHeight: 0.21,
+  },
+  sweetz: {
+    mid: ['donut', 'wrappedCandy', 'iceCream'],
+    big: ['cupcake'],
+    tree: 'lollipop',
+    bush: 'gumdrops',
+    tuft: 'sprinkles',
+    flower: 'candyCane',
+    pebbles: 'sprinkles',
+    fixedFlowers: true,
+    pattern: 'icing',
+  },
+  rollerz: {
+    mid: ['chipTower', 'cardHouse'],
+    big: ['slotMachine'],
+    tree: 'diceStack',
+    bush: 'chips',
+    tuft: 'card',
+    flower: 'chips',
+    pebbles: 'card',
+    fixedFlowers: true,
+    density: 0.35,
+    pattern: 'felt',
+  },
+  shrunk: {
+    mid: ['spoon', 'pencil', 'button'],
+    big: ['teacup'],
+    tree: 'daisy',
+    bush: 'sugarCubes',
+    tuft: 'bladez',
+    flower: 'flower',
+    pebbles: 'crumbs',
+    pattern: 'wood',
+  },
+  minis: {
+    mid: ['fence', 'lamppost'],
+    big: ['modelHouse'],
+    tree: 'modelTree',
+    bush: 'hedge',
+    tuft: 'tuft',
+    flower: 'golfFlag',
+    pebbles: 'pebbles',
+    fixedFlowers: true,
+    pattern: 'grass',
+    grass: 3,
+    grassHeight: 0.12,
+  },
+  space: {
+    mid: ['moonCrater', 'satellite'],
+    big: ['rocket'],
+    tree: 'crystalSpire',
+    bush: 'moonRock',
+    tuft: 'alienSprout',
+    flower: 'alienSprout',
+    pebbles: 'craterPebbles',
+    fixedFlowers: true,
+    pattern: 'moon',
+  },
 };
 
 const WATER_LEVEL = -0.22;
@@ -517,7 +636,12 @@ const HOUSE_GRID = 7;
  * The 2x2 block of high ground a landmark occupies, if tile (x, y) is part of one. Every
  * candidate needs a margin of high ground around it so it never hangs over a cliff edge.
  */
-function houseBlock(x: number, y: number, high: (tx: number, ty: number) => boolean, chance: number): { ax: number; ay: number; yard: boolean } | null {
+function houseBlock(
+  x: number,
+  y: number,
+  high: (tx: number, ty: number) => boolean,
+  chance: number,
+): { ax: number; ay: number; yard: boolean } | null {
   const cx = Math.floor(x / HOUSE_GRID);
   const cy = Math.floor(y / HOUSE_GRID);
   if (hash2(cx * 17 + 5, cy * 23 + 11) > chance) return null;
@@ -569,7 +693,13 @@ export function createTileKit(theme: ThemeId, options: TerrainOptions = { grass:
   const water = waterMaterial(pal.water, pal.waterDeep, mask);
   disposables.push(water);
 
-  const def = (key: PieceKey, geometry: THREE.BufferGeometry, material: THREE.Material, cast = true, receive = true) => {
+  const def = (
+    key: PieceKey,
+    geometry: THREE.BufferGeometry,
+    material: THREE.Material,
+    cast = true,
+    receive = true,
+  ) => {
     pieces.set(key, { geometry, material, castShadow: cast, receiveShadow: receive });
     disposables.push(geometry);
   };
@@ -590,13 +720,15 @@ export function createTileKit(theme: ThemeId, options: TerrainOptions = { grass:
   const grass = grassMaterial(pal.ground[0]!, pal.groundAlt, pal.dirt);
   disposables.push(grass);
   const tuftShadows = grassMode === 'tuftsShadow';
-  for (let i = 0; i < 4; i++) def(`grass${i}`, grassTuft(i + 1, 6, decor.grassHeight ?? 0.16), grass, tuftShadows, true);
+  for (let i = 0; i < 4; i++)
+    def(`grass${i}`, grassTuft(i + 1, 6, decor.grassHeight ?? 0.16), grass, tuftShadows, true);
   // The tops of cliffs are ground too: same patterned surface and grass, in the top colour.
   const topB = new THREE.Color(pal.cliffTop).offsetHSL(0.02, 0.04, 0.05).getHex();
   const topMat = groundMaterial(pal.cliffTop, topB, pal.dirt, decor.pattern, velvetOn);
   const grassTop = grassMaterial(pal.cliffTop, topB, pal.dirt);
   disposables.push(topMat, grassTop);
-  for (let i = 0; i < 4; i++) def(`grassTop${i}`, grassTuft(i + 11, 6, decor.grassHeight ?? 0.16), grassTop, tuftShadows, true);
+  for (let i = 0; i < 4; i++)
+    def(`grassTop${i}`, grassTuft(i + 11, 6, decor.grassHeight ?? 0.16), grassTop, tuftShadows, true);
 
   const surface = new THREE.PlaneGeometry(1, 1, 6, 6);
   surface.rotateX(-Math.PI / 2);
@@ -661,7 +793,9 @@ export function createTileKit(theme: ThemeId, options: TerrainOptions = { grass:
     if (role.startsWith('Fix_')) return parseInt(role.slice(4, 10), 16);
     switch (role) {
       case 'Grass':
-        return key === 'tuft' || key === 'flower' ? new THREE.Color(pal.ground[0]!).multiplyScalar(1.12).getHex() : pal.cliffTop;
+        return key === 'tuft' || key === 'flower'
+          ? new THREE.Color(pal.ground[0]!).multiplyScalar(1.12).getHex()
+          : pal.cliffTop;
       case 'Rock':
         return key.startsWith('cliff') || key === 'mesa' ? pal.cliff : pal.rock;
       case 'Dirt':
@@ -690,7 +824,11 @@ export function createTileKit(theme: ThemeId, options: TerrainOptions = { grass:
   const glbMaterials = new Map<string, THREE.MeshStandardMaterial>();
   // Terrain surfaces with their own shaders.
   const bed = bedMaterial(pal.sand, pal.waterDeep, WATER_LEVEL);
-  const chasm = chasmMaterial(pal.cliff, pal.abyss, liquid ? { color: LIQUID[theme]!.hot, level: LIQUID_LEVEL } : undefined);
+  const chasm = chasmMaterial(
+    pal.cliff,
+    pal.abyss,
+    liquid ? { color: LIQUID[theme]!.hot, level: LIQUID_LEVEL } : undefined,
+  );
   disposables.push(bed, chasm);
   const glbMaterial = (role: string, key: string, vertexColors: boolean): THREE.Material => {
     if (role === 'Ground') return groundMat;
@@ -760,7 +898,14 @@ export function createTileKit(theme: ThemeId, options: TerrainOptions = { grass:
    * density: share of those spots that get something; houses: chance of a 2x2 landmark per
    * grid cell.
    */
-  const scatterHigh = (x: number, y: number, at_: (tx: number, ty: number) => TileVisual | undefined, density: number, houses: number, detail = 1): PlacedPieceDef[] => {
+  const scatterHigh = (
+    x: number,
+    y: number,
+    at_: (tx: number, ty: number) => TileVisual | undefined,
+    density: number,
+    houses: number,
+    detail = 1,
+  ): PlacedPieceDef[] => {
     const out: PlacedPieceDef[] = [];
     if (reduced) {
       // Lighter scenery: fewer props, nothing small far from the map.
@@ -769,12 +914,22 @@ export function createTileKit(theme: ThemeId, options: TerrainOptions = { grass:
     }
     // Grass on top (grassy worlds), thinning out far away.
     // (not under a jungle's undergrowth, which covers the ground anyway)
-    const lawn = grassMode === 'off' || grassMode === 'velvet' ? 0 : detail >= 1 && !decor.undergrowth ? Math.round((decor.grass ?? 0) * 0.6) : detail >= 1 && decor.grass ? 1 : 0;
+    const lawn =
+      grassMode === 'off' || grassMode === 'velvet'
+        ? 0
+        : detail >= 1 && !decor.undergrowth
+          ? Math.round((decor.grass ?? 0) * 0.6)
+          : detail >= 1 && decor.grass
+            ? 1
+            : 0;
     for (let i = 0; i < lawn; i++) {
       const gx = hash2(x * 31 + i * 7, y * 17 + i * 3) - 0.5;
       const gz = hash2(x * 13 + i * 5, y * 29 + i * 11) - 0.5;
       const sc = 0.8 + hash2(x + i * 19, y * 3 + i) * 0.6;
-      out.push({ key: `grassTop${i % 4}`, matrix: at(x + gx * 0.96, y + gz * 0.96, H, hash2(x * 7 + i, y * 13 + i * 5) * TAU, sc, sc, sc) });
+      out.push({
+        key: `grassTop${i % 4}`,
+        matrix: at(x + gx * 0.96, y + gz * 0.96, H, hash2(x * 7 + i, y * 13 + i * 5) * TAU, sc, sc, sc),
+      });
     }
     const high = (tx: number, ty: number) => {
       const v = at_(tx, ty);
@@ -784,8 +939,10 @@ export function createTileKit(theme: ThemeId, options: TerrainOptions = { grass:
     const size = 0.85 + hash2(x * 29 + 1, y * 31 + 5) * 0.35;
     const jx = (hash2(x * 3 + 1, y * 5 + 2) - 0.5) * 0.36;
     const jz = (hash2(x * 5 + 3, y * 3 + 7) - 0.5) * 0.36;
-    const put = (key: string, scale = 1, dx = jx, dz = jz) => out.push({ key, matrix: at(x + dx, y + dz, H, spin, size * scale, size * scale, size * scale) });
-    const pick = (list: string[], salt: number) => list[Math.floor(hash2(x * 13 + salt, y * 17 + salt * 3) * list.length)]!;
+    const put = (key: string, scale = 1, dx = jx, dz = jz) =>
+      out.push({ key, matrix: at(x + dx, y + dz, H, spin, size * scale, size * scale, size * scale) });
+    const pick = (list: string[], salt: number) =>
+      list[Math.floor(hash2(x * 13 + salt, y * 17 + salt * 3) * list.length)]!;
     // Vines or icicles over the exposed edges.
     if (decor.wallHang) {
       const sides: [number, number, number][] = [
@@ -797,7 +954,10 @@ export function createTileKit(theme: ThemeId, options: TerrainOptions = { grass:
       for (const [dx, dy, r] of sides) {
         if (high(x + dx, y + dy) || hash2(x * 53 + dx * 7, y * 59 + dy * 11) > 0.55) continue;
         const shift = (hash2(x * 61 + dy, y * 67 + dx) - 0.5) * 0.3;
-        out.push({ key: pick(decor.wallHang, 13 + dx + dy * 3), matrix: at(x + (dy ? shift : 0), y + (dx ? shift : 0), 0, r, 0.9 + hash2(x, y * 71) * 0.2, 1, 1) });
+        out.push({
+          key: pick(decor.wallHang, 13 + dx + dy * 3),
+          matrix: at(x + (dy ? shift : 0), y + (dx ? shift : 0), 0, r, 0.9 + hash2(x, y * 71) * 0.2, 1, 1),
+        });
       }
     }
 
@@ -834,7 +994,12 @@ export function createTileKit(theme: ThemeId, options: TerrainOptions = { grass:
     // Small things fill the gaps.
     const q = hash2(x * 37 + 3, y * 41 + 9);
     if (reduced && detail === 0) return out;
-    if (decor.undergrowth && decor.underPlants && q < decor.undergrowth * (reduced ? 0.4 : 1) * (0.5 + 0.6 * groves(x, y)) && (detail > 0 || !reduced)) {
+    if (
+      decor.undergrowth &&
+      decor.underPlants &&
+      q < decor.undergrowth * (reduced ? 0.4 : 1) * (0.5 + 0.6 * groves(x, y)) &&
+      (detail > 0 || !reduced)
+    ) {
       put(pick(decor.underPlants, 4), 1.1 + hash2(x * 83, y * 89) * 0.5);
       return out;
     }
@@ -876,7 +1041,11 @@ export function createTileKit(theme: ThemeId, options: TerrainOptions = { grass:
         if (r < 0.18) {
           if (!decor.grass) place(decor.tuft, undefined, 1.6 + hash2(x * 7, y * 3) * 0.9);
         } else if (r < 0.225)
-          place(decor.flower, decor.fixedFlowers ? undefined : FLOWER_COLORS[Math.floor(hash2(x * 9, y * 13) * FLOWER_COLORS.length)]!, 1.6);
+          place(
+            decor.flower,
+            decor.fixedFlowers ? undefined : FLOWER_COLORS[Math.floor(hash2(x * 9, y * 13) * FLOWER_COLORS.length)]!,
+            1.6,
+          );
         else if (r < 0.27) place(decor.pebbles, undefined, 1.5);
       };
       const lawn = () => {
@@ -888,7 +1057,10 @@ export function createTileKit(theme: ThemeId, options: TerrainOptions = { grass:
           const gx = hash2(x * 31 + i * 7, y * 17 + i * 3) - 0.5;
           const gz = hash2(x * 13 + i * 5, y * 29 + i * 11) - 0.5;
           const sc = 0.75 + hash2(x + i * 19, y * 3 + i) * 0.6;
-          out.push({ key: `grass${i % 4}`, matrix: at(x + gx * 0.96, y + gz * 0.96, 0, hash2(x * 7 + i, y * 13 + i * 5) * TAU, sc, sc, sc) });
+          out.push({
+            key: `grass${i % 4}`,
+            matrix: at(x + gx * 0.96, y + gz * 0.96, 0, hash2(x * 7 + i, y * 13 + i * 5) * TAU, sc, sc, sc),
+          });
         }
       };
       switch (v.kind) {
@@ -990,8 +1162,10 @@ export function createTileKit(theme: ThemeId, options: TerrainOptions = { grass:
     cellPieces(cx, cy, corners) {
       const out: PlacedPieceDef[] = [];
       const cls = corners.map(terrainClass);
-      const bits = (c: TerrainClass | 'L') => cls.reduce((m, k, i) => (k === c || (c === 'L' && (k === 'W' || k === 'C')) ? m | (1 << i) : m), 0);
-      const place = (key: string, quarters: number) => out.push({ key, matrix: at(cx - 0.5, cy - 0.5, 0, quarters * (Math.PI / 2)) });
+      const bits = (c: TerrainClass | 'L') =>
+        cls.reduce((m, k, i) => (k === c || (c === 'L' && (k === 'W' || k === 'C')) ? m | (1 << i) : m), 0);
+      const place = (key: string, quarters: number) =>
+        out.push({ key, matrix: at(cx - 0.5, cy - 0.5, 0, quarters * (Math.PI / 2)) });
       const variant = (base: string, n: number) => `${base}_${Math.floor(hash2(cx * 7 + 1, cy * 13 + 5) * n)}`;
       if (!gltf) {
         if (bits('H') !== 15 && bits('L') === 0) place('ground', 0);
@@ -1059,7 +1233,12 @@ export function createTileKit(theme: ThemeId, options: TerrainOptions = { grass:
       glow.rotation.x = -Math.PI / 2;
       glow.position.set(width / 2, -3.9, height / 2);
       group.add(glow);
-      disposables.push(floor.geometry, floor.material as THREE.Material, glow.geometry, glow.material as THREE.Material);
+      disposables.push(
+        floor.geometry,
+        floor.material as THREE.Material,
+        glow.geometry,
+        glow.material as THREE.Material,
+      );
       return group;
     },
 
@@ -1114,7 +1293,13 @@ export function themeSky(theme: ThemeId): number {
 }
 
 /** Main colours of a world for 2D views (minimap). */
-export function themeColors(theme: ThemeId): { ground: number; cliff: number; water: number; abyss: number; rock: number } {
+export function themeColors(theme: ThemeId): {
+  ground: number;
+  cliff: number;
+  water: number;
+  abyss: number;
+  rock: number;
+} {
   const p = PALETTES[theme];
   return { ground: p.ground[0]!, cliff: p.cliff, water: p.water, abyss: p.abyss, rock: p.rock };
 }

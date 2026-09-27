@@ -70,7 +70,16 @@ export class PostFX {
       this.ao = ao;
     }
     const effects: Effect[] = [];
-    if (options.bloom) effects.push(new BloomEffect({ intensity: 0.45, luminanceThreshold: 0.8, luminanceSmoothing: 0.25, mipmapBlur: true, radius: 0.7 }));
+    if (options.bloom)
+      effects.push(
+        new BloomEffect({
+          intensity: 0.45,
+          luminanceThreshold: 0.8,
+          luminanceSmoothing: 0.25,
+          mipmapBlur: true,
+          radius: 0.7,
+        }),
+      );
     effects.push(new ToneMappingEffect({ mode: ToneMappingMode.ACES_FILMIC }));
     if (options.grading) {
       // A little extra colour and punch after the filmic curve, and a soft vignette.

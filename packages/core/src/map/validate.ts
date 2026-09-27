@@ -66,7 +66,13 @@ export function validateLevel(level: LevelData): LevelIssue[] {
   const height = grid.length;
   const width = grid[0]?.length ?? 0;
   const inside = (x: number, y: number) => x >= 0 && y >= 0 && x < width && y < height;
-  const add = (severity: LevelIssue['severity'], code: LevelIssue['code'], o?: LevelObject, object?: number, at?: { x: number; y: number }) => {
+  const add = (
+    severity: LevelIssue['severity'],
+    code: LevelIssue['code'],
+    o?: LevelObject,
+    object?: number,
+    at?: { x: number; y: number },
+  ) => {
     const issue: LevelIssue = { severity, code };
     const p = at ?? o;
     if (p) {
@@ -89,7 +95,8 @@ export function validateLevel(level: LevelData): LevelIssue[] {
       return;
     }
     // Grunts and other "standing" objects can't share a tile; pickups under grunts are fine.
-    const flying = o.type === 'dropper' || o.type === 'cloud' || o.type === 'ufo' || o.type === 'spotlight' || o.type === 'slime';
+    const flying =
+      o.type === 'dropper' || o.type === 'cloud' || o.type === 'ufo' || o.type === 'spotlight' || o.type === 'slime';
     if (o.type !== 'pickup' && o.type !== 'puddle' && o.type !== 'secret' && o.type !== 'giantRock' && !flying) {
       const key = o.y * width + o.x;
       const other = occupied.get(key);
@@ -103,10 +110,13 @@ export function validateLevel(level: LevelData): LevelIssue[] {
     }
     if (o.type === 'pad' && !walkable(d)) add('error', 'padNotWalkable', o, i);
     if (o.type === 'ball' && d && d.traits & T.SOLID) add('error', 'ballOnWall', o, i);
-    if (o.type === 'giantRock' && !(inside(o.x - 1, o.y - 1) && inside(o.x + 1, o.y + 1))) add('error', 'outOfBounds', o, i);
-    if ((o.type === 'cloud' || o.type === 'ufo') && o.points.some(([x, y]) => !inside(x, y))) add('error', 'outOfBounds', o, i);
+    if (o.type === 'giantRock' && !(inside(o.x - 1, o.y - 1) && inside(o.x + 1, o.y + 1)))
+      add('error', 'outOfBounds', o, i);
+    if ((o.type === 'cloud' || o.type === 'ufo') && o.points.some(([x, y]) => !inside(x, y)))
+      add('error', 'outOfBounds', o, i);
     if (o.type === 'slime' && !inside(o.x1, o.y1)) add('error', 'outOfBounds', o, i);
-    if ((o.type === 'fort' || o.type === 'pad') && level.mode === 'battle' && (o.team ?? 0) >= players) add('warning', 'teamOutOfRange', o, i);
+    if ((o.type === 'fort' || o.type === 'pad') && level.mode === 'battle' && (o.team ?? 0) >= players)
+      add('warning', 'teamOutOfRange', o, i);
   });
 
   // --- forts -------------------------------------------------------------------------
@@ -115,21 +125,27 @@ export function validateLevel(level: LevelData): LevelIssue[] {
     const centre = def(grid, o.x, o.y);
     if (!centre || !(centre.traits & T.NOGO)) add('warning', 'fortCentre', o, i);
     let open = 0;
-    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if ((dx || dy) && walkable(def(grid, o.x + dx, o.y + dy))) open++;
+    for (let dy = -1; dy <= 1; dy++)
+      for (let dx = -1; dx <= 1; dx++) if ((dx || dy) && walkable(def(grid, o.x + dx, o.y + dy))) open++;
     if (open === 0) add('error', 'fortBlocked', o, i);
   }
 
   // --- mode specific -------------------------------------------------------------------
   if (level.mode === 'quest') {
     if (!objects.some(o => o.type === 'grunt' && !o.ai)) add('error', 'noPlayerGrunt');
-    if (!objects.some(o => (o.type === 'pickup' && o.item === 'WARPSTONE') || (o.type === 'grunt' && !o.ai && o.tool === 'WARPSTONE'))) {
+    if (
+      !objects.some(
+        o => (o.type === 'pickup' && o.item === 'WARPSTONE') || (o.type === 'grunt' && !o.ai && o.tool === 'WARPSTONE'),
+      )
+    ) {
       add('error', 'noWarpstone');
     }
     if (forts.length === 0) add('error', 'noFort');
     if (forts.length > 1) add('warning', 'manyForts');
   } else {
     for (let team = 0; team < players; team++) {
-      if (!forts.some(([o]) => o.type === 'fort' && (o.team ?? 0) === team)) add('error', 'missingFort', undefined, undefined, { x: team, y: -1 });
+      if (!forts.some(([o]) => o.type === 'fort' && (o.team ?? 0) === team))
+        add('error', 'missingFort', undefined, undefined, { x: team, y: -1 });
       const units = objects.some(o => (o.type === 'grunt' || o.type === 'pad') && (o.team ?? 0) === team);
       if (!units) add('error', 'noUnits', undefined, undefined, { x: team, y: -1 });
     }
@@ -154,14 +170,17 @@ export function validateLevel(level: LevelData): LevelIssue[] {
       if (!SWITCH_KINDS_WITHOUT_TARGETS.has(kind) && !hasTargets) add('warning', 'noTargets', o, i);
       for (const [tx, ty] of o.targets) {
         const hasFlag = objects.some(f => f.type === 'flag' && f.x === tx && f.y === ty);
-        if (!inside(tx, ty) || (!toggleable(def(grid, tx, ty)) && !hasFlag)) add('warning', 'badTarget', o, i, { x: tx, y: ty });
+        if (!inside(tx, ty) || (!toggleable(def(grid, tx, ty)) && !hasFlag))
+          add('warning', 'badTarget', o, i, { x: tx, y: ty });
       }
     }
     if (o.type === 'wormhole') {
-      if (!inside(o.tx, o.ty) || !walkable(def(grid, o.tx, o.ty)) || (o.tx === o.x && o.ty === o.y)) add('error', 'wormholeTarget', o, i);
+      if (!inside(o.tx, o.ty) || !walkable(def(grid, o.tx, o.ty)) || (o.tx === o.x && o.ty === o.y))
+        add('error', 'wormholeTarget', o, i);
     }
     if (o.type === 'secret') {
-      if (!objects.some(w => w.type === 'wormhole' && w.x === o.wx && w.y === o.wy)) add('error', 'triggerNoWormhole', o, i);
+      if (!objects.some(w => w.type === 'wormhole' && w.x === o.wx && w.y === o.wy))
+        add('error', 'triggerNoWormhole', o, i);
     }
   });
   for (let y = 0; y < height; y++) {

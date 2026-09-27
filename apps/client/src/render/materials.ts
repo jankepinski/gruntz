@@ -5,7 +5,10 @@ import * as THREE from 'three';
  * (thumb-print like undulations) computed in world space, so every model looks hand
  * sculpted from the same clay without needing unique textures.
  */
-export function clayMaterial(color: number, opts: { rough?: number; metal?: number; detail?: number } = {}): THREE.MeshStandardMaterial {
+export function clayMaterial(
+  color: number,
+  opts: { rough?: number; metal?: number; detail?: number } = {},
+): THREE.MeshStandardMaterial {
   const material = new THREE.MeshStandardMaterial({
     color,
     roughness: opts.rough ?? 0.88,
@@ -100,7 +103,7 @@ function groundNoise(): THREE.DataTexture {
   const data = new Uint8Array(size * size * 4);
   // Random lattices for a few octaves, each tiling over the whole texture.
   let seed = 1234567;
-  const rand = () => ((seed = (seed * 1103515245 + 12345) >>> 0) / 4294967296);
+  const rand = () => (seed = (seed * 1103515245 + 12345) >>> 0) / 4294967296;
   const octave = (cells: number) => {
     const grid = new Float32Array(cells * cells).map(() => rand());
     return (u: number, v: number) => {
@@ -112,15 +115,19 @@ function groundNoise(): THREE.DataTexture {
       const fy = y - y0;
       const sx = fx * fx * (3 - 2 * fx);
       const sy = fy * fy * (3 - 2 * fy);
-      const at = (i: number, j: number) => grid[(((j % cells) + cells) % cells) * cells + (((i % cells) + cells) % cells)]!;
+      const at = (i: number, j: number) =>
+        grid[(((j % cells) + cells) % cells) * cells + (((i % cells) + cells) % cells)]!;
       const a = at(x0, y0) + (at(x0 + 1, y0) - at(x0, y0)) * sx;
       const b = at(x0, y0 + 1) + (at(x0 + 1, y0 + 1) - at(x0, y0 + 1)) * sx;
       return a + (b - a) * sy;
     };
   };
   // Channels: R big patches, G medium detail, B a separate field for dirt spots.
-  const r1 = octave(4), r2 = octave(9), r3 = octave(19);
-  const b1 = octave(5), b2 = octave(11);
+  const r1 = octave(4),
+    r2 = octave(9),
+    r3 = octave(19);
+  const b1 = octave(5),
+    b2 = octave(11);
   for (let y = 0; y < size; y++) {
     for (let x = 0; x < size; x++) {
       const u = x / size;
@@ -242,7 +249,10 @@ export function groundMaterial(
   pattern: GroundPattern = 'grass',
   velvet = false,
 ): THREE.MeshStandardMaterial & { userData: { time: { value: number } } } {
-  const material = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.95 }) as THREE.MeshStandardMaterial & { userData: { time: { value: number } } };
+  const material = new THREE.MeshStandardMaterial({
+    color: 0xffffff,
+    roughness: 0.95,
+  }) as THREE.MeshStandardMaterial & { userData: { time: { value: number } } };
   applyClay(material, 0.6, 0);
   const clay = material.onBeforeCompile;
   const noise = groundNoise();
@@ -256,7 +266,11 @@ export function groundMaterial(
     shader.uniforms.uGroundNoise = { value: noise };
     shader.uniforms.uTime = time;
     if (velvet) shader.uniforms.uVelvet = { value: velvetTexture() };
-    shader.defines = { ...shader.defines, GROUND_PATTERN: PATTERN_ID[pattern], ...(velvet ? { VELVET: 1, VELVET_PERIOD: `${VELVET_PERIOD}.0` } : {}) };
+    shader.defines = {
+      ...shader.defines,
+      GROUND_PATTERN: PATTERN_ID[pattern],
+      ...(velvet ? { VELVET: 1, VELVET_PERIOD: `${VELVET_PERIOD}.0` } : {}),
+    };
     shader.fragmentShader = shader.fragmentShader
       .replace(
         'uniform float uClayDetail;',
@@ -408,8 +422,16 @@ export function groundMaterial(
  * the tips. Meadows grow in patches of taller grass, thin out on bare earth, and gusts of wind
  * roll across them.
  */
-export function grassMaterial(a: number, b: number, dirt: number): THREE.MeshStandardMaterial & { userData: { time: { value: number } } } {
-  const material = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.8, vertexColors: false }) as THREE.MeshStandardMaterial & {
+export function grassMaterial(
+  a: number,
+  b: number,
+  dirt: number,
+): THREE.MeshStandardMaterial & { userData: { time: { value: number } } } {
+  const material = new THREE.MeshStandardMaterial({
+    color: 0xffffff,
+    roughness: 0.8,
+    vertexColors: false,
+  }) as THREE.MeshStandardMaterial & {
     userData: { time: { value: number } };
   };
   const time = { value: 0 };
@@ -491,7 +513,11 @@ export interface LiquidMask {
 }
 
 export function createLiquidMask(): LiquidMask {
-  return { texture: { value: null }, size: { value: new THREE.Vector2(1, 1) }, flow: { value: new THREE.Vector2(0, 1) } };
+  return {
+    texture: { value: null },
+    size: { value: new THREE.Vector2(1, 1) },
+    flow: { value: new THREE.Vector2(0, 1) },
+  };
 }
 
 const NOISE_GLSL = `
@@ -522,7 +548,11 @@ const WAVES_GLSL = `
  * colour in the middle and clear shallows at the banks, animated foam lapping at the shore,
  * white crests and twinkling sun glints.
  */
-export function waterMaterial(shallow: number, deep: number, mask: LiquidMask): THREE.MeshStandardMaterial & { userData: { time: { value: number } } } {
+export function waterMaterial(
+  shallow: number,
+  deep: number,
+  mask: LiquidMask,
+): THREE.MeshStandardMaterial & { userData: { time: { value: number } } } {
   const material = new THREE.MeshStandardMaterial({
     color: 0xffffff,
     roughness: 0.14,
@@ -623,8 +653,17 @@ export function waterMaterial(shallow: number, deep: number, mask: LiquidMask): 
  * them, hot spots that swell and pop, hotter and thinner-crusted away from the banks.
  * Emissive, so it glows and blooms.
  */
-export function lavaMaterial(hot: number, crust: number, mask: LiquidMask): THREE.MeshStandardMaterial & { userData: { time: { value: number } } } {
-  const material = new THREE.MeshStandardMaterial({ color: crust, roughness: 0.85, emissive: hot, emissiveIntensity: 1 }) as THREE.MeshStandardMaterial & {
+export function lavaMaterial(
+  hot: number,
+  crust: number,
+  mask: LiquidMask,
+): THREE.MeshStandardMaterial & { userData: { time: { value: number } } } {
+  const material = new THREE.MeshStandardMaterial({
+    color: crust,
+    roughness: 0.85,
+    emissive: hot,
+    emissiveIntensity: 1,
+  }) as THREE.MeshStandardMaterial & {
     userData: { time: { value: number } };
   };
   const time = { value: 0 };
@@ -718,9 +757,11 @@ export function lavaMaterial(hot: number, crust: number, mask: LiquidMask): THRE
 
 /** World position varying for custom terrain shaders (works with instancing). */
 function withWorldPos(shader: THREE.WebGLProgramParametersWithUniforms, name: string): void {
-  shader.vertexShader = shader.vertexShader.replace('#include <common>', `#include <common>\nvarying vec3 ${name};`).replace(
-    '#include <worldpos_vertex>',
-    `#include <worldpos_vertex>
+  shader.vertexShader = shader.vertexShader
+    .replace('#include <common>', `#include <common>\nvarying vec3 ${name};`)
+    .replace(
+      '#include <worldpos_vertex>',
+      `#include <worldpos_vertex>
     {
       vec4 wp = vec4( transformed, 1.0 );
       #ifdef USE_INSTANCING
@@ -728,8 +769,11 @@ function withWorldPos(shader: THREE.WebGLProgramParametersWithUniforms, name: st
       #endif
       ${name} = ( modelMatrix * wp ).xyz;
     }`,
+    );
+  shader.fragmentShader = shader.fragmentShader.replace(
+    '#include <common>',
+    `#include <common>\nvarying vec3 ${name};`,
   );
-  shader.fragmentShader = shader.fragmentShader.replace('#include <common>', `#include <common>\nvarying vec3 ${name};`);
 }
 
 /**
@@ -737,7 +781,11 @@ function withWorldPos(shader: THREE.WebGLProgramParametersWithUniforms, name: st
  * the abyss colour, so a one tile wide crack reads as a bottomless drop. In worlds with a
  * molten floor the walls glow just above the liquid.
  */
-export function chasmMaterial(color: number, abyss: number, glow?: { color: number; level: number }): THREE.MeshStandardMaterial {
+export function chasmMaterial(
+  color: number,
+  abyss: number,
+  glow?: { color: number; level: number },
+): THREE.MeshStandardMaterial {
   const material = new THREE.MeshStandardMaterial({ color, roughness: 0.92, vertexColors: true });
   applyClay(material, 1, 0.1);
   const clay = material.onBeforeCompile;
@@ -748,7 +796,10 @@ export function chasmMaterial(color: number, abyss: number, glow?: { color: numb
     shader.uniforms.uGlow = { value: new THREE.Color(glow?.color ?? 0) };
     shader.uniforms.uGlowLevel = { value: glow?.level ?? -99 };
     shader.fragmentShader = shader.fragmentShader
-      .replace('#include <common>', '#include <common>\nuniform vec3 uAbyss;\nuniform vec3 uGlow;\nuniform float uGlowLevel;')
+      .replace(
+        '#include <common>',
+        '#include <common>\nuniform vec3 uAbyss;\nuniform vec3 uGlow;\nuniform float uGlowLevel;',
+      )
       .replace(
         '#include <emissivemap_fragment>',
         `#include <emissivemap_fragment>
@@ -771,8 +822,16 @@ export function chasmMaterial(color: number, abyss: number, glow?: { color: numb
  * Sand under water: darker and bluer with depth, with dancing caustics (two layers of
  * animated cell borders) where light focuses through the waves.
  */
-export function bedMaterial(sand: number, deep: number, waterLevel: number): THREE.MeshStandardMaterial & { userData: { time: { value: number } } } {
-  const material = new THREE.MeshStandardMaterial({ color: sand, roughness: 0.95, vertexColors: true }) as THREE.MeshStandardMaterial & {
+export function bedMaterial(
+  sand: number,
+  deep: number,
+  waterLevel: number,
+): THREE.MeshStandardMaterial & { userData: { time: { value: number } } } {
+  const material = new THREE.MeshStandardMaterial({
+    color: sand,
+    roughness: 0.95,
+    vertexColors: true,
+  }) as THREE.MeshStandardMaterial & {
     userData: { time: { value: number } };
   };
   applyClay(material, 0.5, 0);
@@ -832,8 +891,15 @@ export function bedMaterial(sand: number, deep: number, waterLevel: number): THR
  * one, cracks that start to glow red, then orange, until the whole pool is a bubbling
  * yellow-white just before it blows. uCharge (0..1) is driven by the hazard's timing.
  */
-export function ventLavaMaterial(hot: number, crust: number): THREE.MeshStandardMaterial & { userData: { time: { value: number }; charge: { value: number } } } {
-  const material = new THREE.MeshStandardMaterial({ color: crust, roughness: 0.75, emissive: 0xffffff }) as THREE.MeshStandardMaterial & {
+export function ventLavaMaterial(
+  hot: number,
+  crust: number,
+): THREE.MeshStandardMaterial & { userData: { time: { value: number }; charge: { value: number } } } {
+  const material = new THREE.MeshStandardMaterial({
+    color: crust,
+    roughness: 0.75,
+    emissive: 0xffffff,
+  }) as THREE.MeshStandardMaterial & {
     userData: { time: { value: number }; charge: { value: number } };
   };
   const time = { value: 0 };

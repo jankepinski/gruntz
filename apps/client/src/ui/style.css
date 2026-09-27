@@ -1413,7 +1413,6 @@ kbd {
   color: var(--ink);
 }
 
-
 /* --- editor: floating glass panels over a full-screen map ------------------------------- */
 .ed-float {
   position: absolute;

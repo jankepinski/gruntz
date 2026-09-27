@@ -298,7 +298,8 @@ export const en = {
     respawn: 'Respawn after (s, 0 = never)',
     targets: 'Targets: {n}',
     partners: 'Partners: {n}',
-    linkHint: 'Link mode: click pyramids, bridges, arrows or flags to toggle them. Shift+click: orange partner. Esc: done.',
+    linkHint:
+      'Link mode: click pyramids, bridges, arrows or flags to toggle them. Shift+click: orange partner. Esc: done.',
     linkWormhole: 'Link mode: click where the wormhole leads. Esc: done.',
     linkSecret: 'Link mode: click the red wormhole this trigger opens. Esc: done.',
     editLinks: 'Edit links',
@@ -331,7 +332,8 @@ export const en = {
     problems: 'Problems',
     noProblems: 'No problems found.',
     errorsBlock: 'Fix the errors before test playing.',
-    shortcuts: 'B brush · R rectangle · G fill · O object · V select · L link · Alt+click pick tile · middle drag pan · Q/E rotate · Ctrl+Z / Ctrl+Y',
+    shortcuts:
+      'B brush · R rectangle · G fill · O object · V select · L link · Alt+click pick tile · middle drag pan · Q/E rotate · Ctrl+Z / Ctrl+Y',
     objectTypes: {
       grunt: 'Player grunt',
       enemy: 'Enemy grunt',
