@@ -296,7 +296,7 @@ export class GameRenderer {
     this.sun.position.set(tx - 16, 21, tz + 12);
     this.sun.target.position.set(tx, 0, tz);
     this.terrain?.update(ctx.dt);
-    this.entities.sync(ctx);
+    this.entities.sync(ctx, { x: tx, z: tz });
     this.effects.update(ctx.dt);
     this.post.setCamera(this.rig.active);
     this.post.render(ctx.dt);
