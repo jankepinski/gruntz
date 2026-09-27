@@ -1,0 +1,10 @@
+# generated or binary content
+node_modules/
+dist/
+coverage/
+pnpm-lock.yaml
+apps/client/public/
+assets/previews/
+assets/blender/out/
+# level files keep the editor's own layout (one tile row / object per line)
+content/levels/
