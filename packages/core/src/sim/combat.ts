@@ -17,6 +17,7 @@ import {
   setAction,
   walkTask,
 } from './grunt.ts';
+import { inReach } from './elevation.ts';
 import { Flood, floodOptions } from './path.ts';
 import { interruptToy, useToyOn } from './toys.ts';
 import type { Grunt, Projectile, ProjectileType } from './types.ts';
@@ -56,7 +57,7 @@ export function chase(w: World, g: Grunt, enemy: Grunt): boolean {
   const flood = new Flood(w, enemy, g.team, floodOptions(w, g, g.ai !== null), g);
   const hasPath = flood.reaches(g);
   if (!aiOnChase(w, g, enemy, hasPath)) return false;
-  if (chebyshev(g, enemy) <= 1 && engage(w, g, enemy, false)) return true;
+  if (inReach(w, g, enemy) && engage(w, g, enemy, false)) return true;
   if (hasPath || canUseRanged(g, enemy)) {
     const task = walkTask(enemy.x, enemy.y, { enemy: enemy.id, useTool: true, safe: g.ai !== null });
     w.edit(g, { task });
@@ -72,7 +73,7 @@ export function chase(w: World, g: Grunt, enemy: Grunt): boolean {
 /** Attack (or toy) an enemy in reach. */
 export function engage(w: World, g: Grunt, enemy: Grunt, useToy: boolean): boolean {
   if (!useToy && useRangedTool(w, g, enemy, enemy)) return true;
-  if (enemy.id !== g.id && chebyshev(g, enemy) > 1) return false;
+  if (enemy.id !== g.id && !inReach(w, g, enemy)) return false;
   if (useToy) {
     useToyOn(w, g, enemy);
     return true;
@@ -105,7 +106,7 @@ registerTask('performAttack', (w, id, enemyId: number) => {
   const enemy = w.get(enemyId, 'grunt');
   const info = TOOL_INFO[combatTool(g)];
   chargeStamina(w, g, true);
-  if (enemy && !isGone(enemy) && chebyshev(g, enemy) <= 1) {
+  if (enemy && !isGone(enemy) && inReach(w, g, enemy)) {
     struckByGrunt(w, enemy, g, info.damage);
   }
   w.schedule(msToTicks(info.attackIdle), 'finishAttack', g.id, 'action', enemyId);

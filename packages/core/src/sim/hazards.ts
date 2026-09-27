@@ -1,5 +1,6 @@
 import { T } from '../data/tiles.ts';
 import { DIRS, type Dir } from '../point.ts';
+import { levelsConnect } from './elevation.ts';
 import { isGone, kill } from './grunt.ts';
 import type { RollingBall } from './types.ts';
 import { registerTask, type World } from './world.ts';
@@ -56,7 +57,7 @@ registerTask('ballStep', (w, id) => {
   const d = DIRS[ball.dir]!;
   const nx = ball.x + d.x;
   const ny = ball.y + d.y;
-  if (!w.inBounds(nx, ny) || w.has(nx, ny, T.SOLID | T.NOGO)) {
+  if (!w.inBounds(nx, ny) || w.has(nx, ny, T.SOLID | T.NOGO) || !levelsConnect(w, ball, { x: nx, y: ny })) {
     breakBall(w, ball);
     return;
   }

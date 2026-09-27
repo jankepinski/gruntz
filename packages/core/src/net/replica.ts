@@ -8,7 +8,7 @@ import { hashView, type Delta, type ViewSnapshot } from './view.ts';
  * prediction, but it never runs tasks itself.
  */
 export function worldFromView(s: ViewSnapshot): World {
-  const w = new World(s.width, s.height, s.tiles, s.theme, s.mode, 1);
+  const w = new World(s.width, s.height, s.tiles, s.theme, s.mode, 1, s.heights);
   w.tick = s.tick;
   w.alliances = s.alliances.slice();
   for (const e of s.entities) w.putEntity(structuredClone(e));

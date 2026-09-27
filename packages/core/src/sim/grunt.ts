@@ -4,6 +4,7 @@ import { T, tileDef } from '../data/tiles.ts';
 import { DIRS, dirBetween, eq, type Dir, type Point } from '../point.ts';
 import { aiOnDeath, aiOnIdle, aiOnWalk, canBomberCharge } from './ai.ts';
 import { chase, engage, useRangedTool } from './combat.ts';
+import { levelsConnect } from './elevation.ts';
 import { canMoveTo, canUseWater, chooseStep, Flood, floodOptions } from './path.ts';
 import { breakAt, pressTileObjects, releaseTileObjects } from './objects.ts';
 import { placeToybox, interruptToy } from './toys.ts';
@@ -554,7 +555,8 @@ export function checkTile(w: World, g: Grunt): boolean {
 }
 
 function moveForced(w: World, g: Grunt, to: Point): void {
-  if (!w.inBounds(to.x, to.y)) {
+  // Pushed off the map or against a cliff: like running into a wall.
+  if (!w.inBounds(to.x, to.y) || !levelsConnect(w, g, to)) {
     kill(w, g, 'EXPLODE');
     return;
   }

@@ -81,6 +81,8 @@ export interface WorldSnapshot {
   theme: ThemeId;
   mode: GameMode;
   tiles: number[];
+  /** Height level of every tile (omitted when the map is flat). */
+  heights?: number[];
   alliances: number[];
   entities: Entity[];
   tasks: Task[];
@@ -122,6 +124,13 @@ export class World {
   theme: ThemeId;
   mode: GameMode;
   tiles: number[];
+  /**
+   * Height level of every tile (0 = the ground, each level one cliff higher). Fixed for the
+   * whole game; stairz (RAMP tiles) lead from one level to the next.
+   */
+  readonly heights: number[];
+  /** Highest level on the map. */
+  readonly maxLevel: number;
   /** Team index -> alliance. Gruntz of the same alliance never fight. */
   alliances: number[] = [0, 1, 2, 3, 4];
   rules: Rules = {};
@@ -142,11 +151,22 @@ export class World {
   private keyed = new Map<string, number>();
   private cancelled = new Set<number>();
 
-  constructor(width: number, height: number, tiles: number[], theme: ThemeId, mode: GameMode, seed = 1) {
+  constructor(
+    width: number,
+    height: number,
+    tiles: number[],
+    theme: ThemeId,
+    mode: GameMode,
+    seed = 1,
+    heights?: readonly number[],
+  ) {
     if (tiles.length !== width * height) throw new Error('Tile array size mismatch');
+    if (heights && heights.length !== width * height) throw new Error('Height array size mismatch');
     this.width = width;
     this.height = height;
     this.tiles = tiles.slice();
+    this.heights = heights ? heights.slice() : new Array<number>(width * height).fill(0);
+    this.maxLevel = this.heights.reduce((m, h) => Math.max(m, h), 0);
     this.theme = theme;
     this.mode = mode;
     this.rng = seed >>> 0 || 1;
@@ -176,6 +196,12 @@ export class World {
 
   has(x: number, y: number, trait: number): boolean {
     return (this.traits(x, y) & trait) !== 0;
+  }
+
+  /** Height level of a tile (0 outside the map). */
+  level(x: number, y: number): number {
+    if (!this.inBounds(x, y)) return 0;
+    return this.heights[y * this.width + x]!;
   }
 
   setTile(x: number, y: number, tile: number): void {
@@ -532,6 +558,7 @@ export class World {
       theme: this.theme,
       mode: this.mode,
       tiles: this.tiles,
+      ...(this.maxLevel > 0 ? { heights: this.heights } : {}),
       alliances: this.alliances,
       entities: [...this.entities.values()].sort((a, b) => a.id - b.id),
       tasks: this.pendingTasks(),
@@ -539,7 +566,7 @@ export class World {
   }
 
   static fromSnapshot(s: WorldSnapshot): World {
-    const w = new World(s.width, s.height, s.tiles, s.theme, s.mode, s.rng);
+    const w = new World(s.width, s.height, s.tiles, s.theme, s.mode, s.rng, s.heights);
     w.tick = s.tick;
     w.rng = s.rng;
     w.nextId = s.nextId;
