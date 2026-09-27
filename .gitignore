@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.DS_Store
+*.log
+.vite/
+coverage/
+assets/blender/out/
+assets/previews/
+*.blend1
+__pycache__/
+*.pyc

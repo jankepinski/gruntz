@@ -1,0 +1,21 @@
+{
+  "name": "@gruntz/server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "tsx src/index.ts",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@gruntz/core": "workspace:*",
+    "msgpackr": "^2.1.0",
+    "ws": "^8.22.0",
+    "zod": "^4.6.5",
+    "tsx": "^4.23.15"
+  },
+  "devDependencies": {
+    "@types/ws": "^8.18.1"
+  }
+}
