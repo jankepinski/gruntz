@@ -240,13 +240,29 @@ export function chooseStep(w: World, grunt: Grunt, flood: Flood, useItem: boolea
   const weight = flood.get(here);
   if (weight === 0) return undefined;
   const water = canUseWater(grunt);
+  const deadly = (p: Point) => {
+    const traits = w.traits(p.x, p.y);
+    if (grunt.tool === 'WINGZ' && traits & T.FLY) return false;
+    return (traits & (T.DEATH | T.HOLE)) !== 0;
+  };
+  // The best a safe step could do, even one that another grunt is standing on right now.
+  let bestSafe = UNREACHABLE;
+  for (let dir = 0; dir < 8; dir++) {
+    const delta = DIRS[dir]!;
+    const next = { x: here.x + delta.x, y: here.y + delta.y };
+    if (!w.inBounds(next.x, next.y) || deadly(next) || !canMoveBetween(w, here, next)) continue;
+    const traits = w.traits(next.x, next.y);
+    if (traits & (T.NOGO | T.SOLID) || (traits & T.WATER && !water)) continue;
+    bestSafe = Math.min(bestSafe, flood.get(next));
+  }
   let choice: StepChoice | undefined;
   let choiceWeight = UNREACHABLE;
   for (let dir = 0 as Dir; dir < 8; dir = (dir + 1) as Dir) {
     const delta = DIRS[dir]!;
     const next = { x: here.x + delta.x, y: here.y + delta.y };
     const nextWeight = flood.get(next);
-    if (nextWeight === 0 && useItem) return { to: next, jump: false, atTarget: true };
+    // Next to the target (and really next to it: not across a cliff or the side of stairz).
+    if (nextWeight === 0 && useItem && levelsConnect(w, here, next)) return { to: next, jump: false, atTarget: true };
     if (grunt.tool === 'SPRING' && flood.isSpringable(next)) {
       const jump = { x: next.x + delta.x, y: next.y + delta.y };
       if (!canMoveTo(w, here, jump, water)) continue;
@@ -258,6 +274,9 @@ export function chooseStep(w: World, grunt: Grunt, flood: Flood, useItem: boolea
       continue;
     }
     if (!canMoveTo(w, here, next, water)) continue;
+    // Dumb gruntz walk into a deadly tile when that is the way they were sent, but not to
+    // get round a grunt in their way (QoL: they wait for it instead).
+    if (deadly(next) && nextWeight >= bestSafe) continue;
     if (choice) {
       if (nextWeight < choiceWeight) {
         choice = { to: next, jump: false, atTarget: false };

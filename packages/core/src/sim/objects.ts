@@ -69,6 +69,8 @@ export function pickup(w: World, p: Pickup, g: Grunt): boolean {
   if (p.availableAt !== undefined && w.tick < p.availableAt) return false;
   if (g.action.kind === 'play') return false;
   const type = p.item === 'TOYBOX' ? 'toybox' : itemType(p.item);
+  // Enemy gruntz leave the level's items alone (a toybox they can't resist, though).
+  if (g.ai && type !== 'toybox') return false;
   const team = w.team(g.team);
 
   switch (type) {
