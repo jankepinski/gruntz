@@ -218,6 +218,16 @@ function Minimap({ client }: { client: GameClient }) {
           g.fillStyle = themed[v.kind] ?? MINIMAP_COLORS[v.kind] ?? '#9a8a6a';
           if (v.kind === 'pyramid' && v.lowered) g.fillStyle = '#b8a888';
           g.fillRect(x * scale, y * scale, scale + 0.5, scale + 0.5);
+          // High ground a little lighter per level, with a dark rim where it drops.
+          const level = w.level(x, y);
+          if (level > 0 && v.kind !== 'cliff') {
+            g.fillStyle = `rgba(255,255,255,${0.1 * level})`;
+            g.fillRect(x * scale, y * scale, scale + 0.5, scale + 0.5);
+          }
+          if (v.kind !== 'cliff' && v.kind !== 'ramp' && y + 1 < w.height && w.level(x, y + 1) < level) {
+            g.fillStyle = 'rgba(0,0,0,0.35)';
+            g.fillRect(x * scale, (y + 1) * scale - Math.max(1, scale * 0.25), scale + 0.5, Math.max(1, scale * 0.25));
+          }
         }
       for (const f of w.all('fort')) {
         g.fillStyle = hex(TEAM_COLORS[f.team] ?? 0xffffff);
@@ -278,6 +288,7 @@ const MINIMAP_COLORS: Record<string, string> = {
   arrow: '#e8c83a',
   switch: '#e8e8e8',
   pyramid: '#d8d0c0',
+  ramp: '#c8a070',
 };
 
 function SelectionPanel({ client, gruntz }: { client: GameClient; gruntz: Grunt[] }) {

@@ -27,6 +27,7 @@ import {
 } from './placeholders.ts';
 import { ClipPlayer, createGrunt, createProp, type GruntModel } from './models.ts';
 import { themeRock } from './tileKit.ts';
+import { groundY } from './elevation.ts';
 import { createHazardView } from './hazardViews.ts';
 
 export interface FrameCtx {
@@ -1174,9 +1175,13 @@ function checkerTexture(): THREE.Texture {
 
 // --- layer ------------------------------------------------------------------------------
 
+/** Views laid out in world coordinates (their parts move independently): not lifted as a whole. */
+const FREE_VIEWS = new Set(['dropper', 'ufo', 'spotlight']);
+
 export class EntityLayer {
   readonly group = new THREE.Group();
-  private views = new Map<EntityId, { kind: string; view: View }>();
+  /** holder: lifts the view to the ground height under it (high ground, stairz). */
+  private views = new Map<EntityId, { kind: string; view: View; holder: THREE.Group }>();
 
   constructor(private camera: () => THREE.Camera) {
     this.group.name = 'entities';
@@ -1220,21 +1225,29 @@ export class EntityLayer {
     for (const [id, entry] of this.views) {
       const e = w.entities.get(id);
       if (!e || e.kind !== entry.kind) {
-        entry.view.object.removeFromParent();
+        entry.holder.removeFromParent();
         entry.view.dispose?.();
         this.views.delete(id);
       }
     }
+    const lifted = w.maxLevel > 0;
     for (const e of w.entities.values()) {
       let entry = this.views.get(e.id);
       if (!entry) {
         const view = this.create(e, w.theme);
         if (!view) continue;
-        entry = { kind: e.kind, view };
+        const holder = new THREE.Group();
+        holder.add(view.object);
+        entry = { kind: e.kind, view, holder };
         this.views.set(e.id, entry);
-        this.group.add(view.object);
+        this.group.add(holder);
       }
       entry.view.update(e, ctx);
+      // (flyers place their own ground parts)
+      if (lifted && !FREE_VIEWS.has(e.kind)) {
+        const p = entry.view.object.position;
+        entry.holder.position.y = groundY(w, p.x, p.z);
+      }
     }
   }
 
@@ -1293,8 +1306,8 @@ export class EntityLayer {
   }
 
   dispose(): void {
-    for (const { view } of this.views.values()) {
-      view.object.removeFromParent();
+    for (const { view, holder } of this.views.values()) {
+      holder.removeFromParent();
       view.dispose?.();
     }
     this.views.clear();

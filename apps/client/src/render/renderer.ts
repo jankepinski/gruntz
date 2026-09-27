@@ -4,6 +4,7 @@ import { CameraRig } from './camera.ts';
 import { Effects } from './effects.ts';
 import { EntityLayer, type FrameCtx } from './entities.ts';
 import { TerrainView } from './terrain.ts';
+import { groundY, tileY } from './elevation.ts';
 import { themeLighting, themeSky } from './tileKit.ts';
 import { clayRim } from './materials.ts';
 import { PostFX } from './postfx.ts';
@@ -78,6 +79,7 @@ export class GameRenderer {
 
     this.scene.add(this.entities.group, this.effects.group);
     this.effects.onShake = a => this.rig.addShake(a);
+    this.effects.groundAt = (x, z) => (this.world ? groundY(this.world, x, z) : 0);
 
     const hoverGeo = new THREE.BufferGeometry().setFromPoints([
       new THREE.Vector3(-0.47, 0, -0.47),
@@ -239,7 +241,9 @@ export class GameRenderer {
   setHover(tile: Point | null, mode: HoverMode, world: World | null): void {
     this.hover.visible = !!tile && mode !== 'none';
     if (!tile || !world) return;
-    const h = world.has(tile.x, tile.y, T.HILL) ? 1.07 : 0.03;
+    const h = world.has(tile.x, tile.y, T.HILL)
+      ? tileY(world, tile.x, tile.y) + 1.07
+      : tileY(world, tile.x, tile.y) + 0.03;
     this.hover.position.set(tile.x + 0.5, h, tile.y + 0.5);
     (this.hover.material as THREE.LineBasicMaterial).color.setHex(HOVER_COLORS[mode]);
   }
@@ -250,7 +254,7 @@ export class GameRenderer {
     const count = Math.min(points.length, this.pathDots.instanceMatrix.count);
     for (let i = 0; i < count; i++) {
       const p = points[i]!;
-      m.makeTranslation(p.x + 0.5, 0.04, p.y + 0.5);
+      m.makeTranslation(p.x + 0.5, (this.world ? tileY(this.world, p.x, p.y) : 0) + 0.04, p.y + 0.5);
       this.pathDots.setMatrixAt(i, m);
       this.pathDots.setColorAt(i, dangerous(p) ? c.setHex(0xff3a2a) : c.setHex(0xffffff));
     }
@@ -267,7 +271,8 @@ export class GameRenderer {
     }
     const pts: THREE.Vector3[] = [];
     for (const t of targets) {
-      pts.push(new THREE.Vector3(from.x + 0.5, 0.3, from.y + 0.5), new THREE.Vector3(t.x + 0.5, 0.3, t.y + 0.5));
+      const y = (p: Point) => (this.world ? tileY(this.world, p.x, p.y) : 0) + 0.3;
+      pts.push(new THREE.Vector3(from.x + 0.5, y(from), from.y + 0.5), new THREE.Vector3(t.x + 0.5, y(t), t.y + 0.5));
     }
     this.linkLines.geometry.dispose();
     this.linkLines.geometry = new THREE.BufferGeometry().setFromPoints(pts);

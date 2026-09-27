@@ -16,6 +16,7 @@ import {
 import { createHazard } from './models.ts';
 import { mat } from './placeholders.ts';
 import { LIQUID } from './tileKit.ts';
+import { groundY } from './elevation.ts';
 import { ventLavaMaterial } from './materials.ts';
 
 /**
@@ -496,8 +497,9 @@ export class DropperView implements HazardView {
   update(e: Entity, ctx: HazardFrame): void {
     const d = e as EntityOf<'dropper'>;
     const p = dropperPosition(ctx.world, d, ctx.tick + (ctx.dt ? 0 : 0));
-    this.flyer.position.copy(at(p.x, p.y, FLY_HEIGHT + Math.sin(ctx.time * 2 + d.id) * 0.1));
-    this.shadow.position.copy(at(p.x, p.y, 0.03));
+    const ground = groundY(ctx.world, p.x + 0.5, p.y + 0.5);
+    this.flyer.position.copy(at(p.x, p.y, ground + FLY_HEIGHT + Math.sin(ctx.time * 2 + d.id) * 0.1));
+    this.shadow.position.copy(at(p.x, p.y, ground + 0.03));
     // Face the flying direction (0 north = -z, 2 east = +x).
     this.flyer.rotation.y = -(d.dir * Math.PI) / 4;
     const flap = Math.sin(ctx.time * 12) * 0.7;
@@ -647,13 +649,14 @@ export class UfoView implements HazardView {
   update(e: Entity, ctx: HazardFrame): void {
     const u = e as EntityOf<'ufo'>;
     const p = pathPosition(u, ctx.tick);
-    const base = at(p.x, p.y, 0);
+    const ground = groundY(ctx.world, p.x + 0.5, p.y + 0.5);
+    const base = at(p.x, p.y, ground);
     this.object.position.set(0, 0, 0);
-    this.ship.position.set(base.x, FLY_HEIGHT + 0.2 + Math.sin(ctx.time * 2) * 0.08, base.z);
+    this.ship.position.set(base.x, ground + FLY_HEIGHT + 0.2 + Math.sin(ctx.time * 2) * 0.08, base.z);
     this.ship.rotation.y += ctx.dt * 1.5;
-    this.shadow.position.set(base.x, 0.03, base.z);
+    this.shadow.position.set(base.x, ground + 0.03, base.z);
     ufoBeams(u, ctx.tick).forEach((b, i) => {
-      const target = at(b.x, b.y, 0.04);
+      const target = at(b.x, b.y, groundY(ctx.world, b.x + 0.5, b.y + 0.5) + 0.04);
       const from = this.ship.position;
       const beam = this.beams[i]!;
       beam.position.copy(from);
@@ -688,8 +691,8 @@ export class SpotLightView implements HazardView {
   update(e: Entity, ctx: HazardFrame): void {
     const s = e as EntityOf<'spotlight'>;
     const p = spotPosition(s, ctx.tick);
-    const target = at(p.x, p.y, 0.04);
-    const from = at(s.x, s.y, 7);
+    const target = at(p.x, p.y, groundY(ctx.world, p.x + 0.5, p.y + 0.5) + 0.04);
+    const from = at(s.x, s.y, 7 + groundY(ctx.world, s.x + 0.5, s.y + 0.5));
     this.cone.position.copy(from);
     const dir = new THREE.Vector3().subVectors(target, from);
     this.cone.scale.set(1, dir.length(), 1);

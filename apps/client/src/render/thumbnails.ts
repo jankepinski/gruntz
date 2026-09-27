@@ -120,8 +120,30 @@ class Thumbnails {
     clayRim.value.setHex(l.rim);
   }
 
-  /** A 5x5 patch of plain ground with something in the middle (liquids get a pool around them). */
-  private world(theme: ThemeId, centre: string, objects: LevelObject[] = []): World {
+  /**
+   * A 5x5 patch of plain ground with something in the middle (liquids get a pool around them).
+   * Height brushes (LEVEL_n) raise the middle tile (level 0: a notch in higher ground);
+   * stairz get the high ground they lead up to.
+   */
+  private world(theme: ThemeId, name: string, objects: LevelObject[] = []): World {
+    const raise = name.startsWith('LEVEL_') ? Number(name.slice(6)) : null;
+    const ramp = /^RAMP_([NESW])$/.exec(name)?.[1];
+    const centre = raise !== null ? 'GROUND' : name;
+    let heights: string[] | undefined;
+    if (raise !== null)
+      heights = [0, 1, 2, 3, 4].map(y =>
+        [0, 1, 2, 3, 4].map(x => (x === 2 && y === 2 ? raise : raise === 0 ? 1 : 0)).join(''),
+      );
+    if (ramp)
+      heights = [0, 1, 2, 3, 4].map(y =>
+        [0, 1, 2, 3, 4]
+          .map(x =>
+            (ramp === 'N' && y < 2) || (ramp === 'S' && y > 2) || (ramp === 'E' && x > 2) || (ramp === 'W' && x < 2)
+              ? 1
+              : 0,
+          )
+          .join(''),
+      );
     // BRIDGE* tiles span water, DBRIDGE* tiles span the abyss.
     const pool =
       centre.startsWith('WATER') || centre.startsWith('BRIDGE')
@@ -138,6 +160,7 @@ class Thumbnails {
       tiles: pool ? ['.....', '.ooo.', '.oXo.', '.ooo.', '.....'] : ['.....', '.....', '..X..', '.....', '.....'],
       objects,
     };
+    if (heights) level.heights = heights;
     return createWorld(level, { seed: 1, teams: [{ team: 0, name: 'P' }] });
   }
 
@@ -166,8 +189,17 @@ class Thumbnails {
     terrain.build(w);
     terrain.update(1.7);
     r.scene.add(terrain.group);
-    const tall = name.startsWith('CLIFF') ? 0.55 : name.startsWith('PYRAMID') && !name.endsWith('_LO') ? 0.45 : 0.15;
-    this.shoot(r, new THREE.Vector3(2.5, tall, 2.5), 0.82);
+    const raised = name.startsWith('LEVEL_') ? Number(name.slice(6)) : 0;
+    const tall = name.startsWith('CLIFF')
+      ? 0.55
+      : name.startsWith('RAMP_')
+        ? 0.55
+        : raised > 0
+          ? raised * 0.6
+          : name.startsWith('PYRAMID') && !name.endsWith('_LO')
+            ? 0.45
+            : 0.15;
+    this.shoot(r, new THREE.Vector3(2.5, tall, 2.5), raised > 1 ? 0.82 + (raised - 1) * 0.35 : 0.82);
     r.scene.remove(terrain.group);
     terrain.dispose();
   }
