@@ -105,26 +105,54 @@ export class Walkthrough {
     this.step(msToTicks(ms));
   }
 
-  private settled(id: EntityId): boolean {
+  /** Standing still with nothing left to do. */
+  settled(id: EntityId): boolean {
     const g = this.grunt(id);
     return isIdle(g) && g.orders.length === 0 && !g.task;
   }
 
   move(id: EntityId, x: number, y: number): void {
     this.cmd({ type: 'move', ids: [id], x, y });
+    let lastOrder = this.w.tick;
+    this.until(() => {
+      const g = this.grunt(id);
+      if (g.x === x && g.y === y && this.settled(id)) return true;
+      // A toy (or a fight) made the grunt forget where it was going: click again.
+      if (this.settled(id) && this.w.tick - lastOrder > 40) {
+        this.session.submit(0, { type: 'move', ids: [id], x, y });
+        lastOrder = this.w.tick;
+      }
+      return false;
+    }, `#${id} to reach ${x},${y}`);
+  }
+
+  /** Walk with safe pathfinding (around holez and abysses, like the QoL setting). */
+  moveSafe(id: EntityId, x: number, y: number): void {
+    this.cmd({ type: 'move', ids: [id], x, y, safe: true });
     this.until(() => {
       const g = this.grunt(id);
       return g.x === x && g.y === y && this.settled(id);
-    }, `#${id} to reach ${x},${y}`);
+    }, `#${id} to reach ${x},${y} safely`);
   }
 
   /** Walk several gruntz to their own tiles at once. */
   moveAll(moves: [EntityId, number, number][]): void {
     for (const [id, x, y] of moves) this.cmd({ type: 'move', ids: [id], x, y });
-    this.until(
-      () => moves.every(([id, x, y]) => this.grunt(id).x === x && this.grunt(id).y === y && this.settled(id)),
-      'group move',
-    );
+    let lastOrder = this.w.tick;
+    this.until(() => {
+      const there = ([id, x, y]: [EntityId, number, number]) =>
+        this.grunt(id).x === x && this.grunt(id).y === y && this.settled(id);
+      if (moves.every(there)) return true;
+      // Anyone who forgot the order (a fight, a toy) gets clicked again.
+      if (this.w.tick - lastOrder > 40) {
+        for (const m of moves) {
+          const [id, x, y] = m;
+          if (!there(m) && this.settled(id)) this.session.submit(0, { type: 'move', ids: [id], x, y });
+        }
+        lastOrder = this.w.tick;
+      }
+      return false;
+    }, 'group move');
   }
 
   /** Use the grunt's tool on a tile and wait until the tile changes. */
@@ -135,6 +163,19 @@ export class Walkthrough {
       done ?? (() => this.w.tileAt(x, y) !== before && this.settled(id)),
       `#${id} to use ${this.grunt(id).tool} on ${x},${y}`,
     );
+  }
+
+  /** Break a stack of brickz layer by layer (gauntletz, one layer per blow). */
+  breakBrickz(id: EntityId, x: number, y: number): void {
+    for (let blows = 0; this.tile(x, y) === 'BRICKZ'; blows++) {
+      if (blows > 6) throw new Error(`${this.level.id}: brickz at ${x},${y} won't break`);
+      const layers = this.w.objectAt(x, y, 'brickz')?.layers.length ?? 0;
+      this.cmd({ type: 'useTool', ids: [id], x, y });
+      this.until(
+        () => (this.w.objectAt(x, y, 'brickz')?.layers.length ?? 0) < layers && this.settled(id),
+        `#${id} to break a layer of brickz at ${x},${y}`,
+      );
+    }
   }
 
   /** Suck up a goo puddle with the goober straw. */
@@ -159,7 +200,46 @@ export class Walkthrough {
   giveToy(id: EntityId, target: EntityId): void {
     const t = this.grunt(target);
     this.cmd({ type: 'useToy', ids: [id], x: t.x, y: t.y, target });
-    this.until(() => this.w.get(target, 'grunt')?.action.kind === 'play', `#${target} to play with a toy`);
+    let lastOrder = this.w.tick;
+    this.until(() => {
+      const e = this.w.get(target, 'grunt');
+      if (e?.action.kind === 'play') return true;
+      // A blow interrupts the throw: hand it over again, like a player would.
+      if (e && this.grunt(id).toy && this.settled(id) && this.w.tick - lastOrder > 20) {
+        this.session.submit(0, { type: 'useToy', ids: [id], x: e.x, y: e.y, target });
+        lastOrder = this.w.tick;
+      }
+      return false;
+    }, `#${target} to play with a toy`);
+  }
+
+  /**
+   * Stand still with toyz until every listed enemy is playing: whoever of ours has a toy
+   * throws it at an enemy the moment one steps next to him.
+   */
+  toyWhenClose(ids: EntityId[], enemies: EntityId[]): void {
+    const last = new Map<EntityId, number>();
+    const near = (a: { x: number; y: number }, b: { x: number; y: number }) =>
+      Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y)) <= 1;
+    this.until(
+      () => {
+        const busy = (e: EntityId) => {
+          const g = this.w.get(e, 'grunt');
+          return !g || g.action.kind === 'play' || g.action.kind === 'death';
+        };
+        for (const id of ids) {
+          const g = this.w.get(id, 'grunt');
+          if (!g?.toy || this.w.tick - (last.get(id) ?? -99) < 10) continue;
+          const target = enemies.find(e => !busy(e) && near(g, this.grunt(e)));
+          if (target === undefined) continue;
+          const t = this.grunt(target);
+          this.session.submit(0, { type: 'useToy', ids: [id], x: t.x, y: t.y, target });
+          last.set(id, this.w.tick);
+        }
+        return enemies.every(busy);
+      },
+      `#${enemies.join(', #')} to play with toyz`,
+    );
   }
 
   /** Read the scroll this grunt carries (use the toy on itself). */
@@ -179,13 +259,42 @@ export class Walkthrough {
     if (!this.w.get(target, 'grunt') || this.grunt(target).action.kind === 'death') return;
     this.cmd({ type: 'attack', ids, target });
     let lastOrder = this.w.tick;
+    const dodging = new Map<EntityId, EntityId>(); // grunt -> the timebomb it is getting away from
     this.until(
       () => {
         if (!this.w.get(target, 'grunt')) return true;
         const enemy = this.grunt(target);
         if (enemy.action.kind === 'death') return false;
+        // A timebomb set next to one of ours: step well away from it, like a player would.
+        const bombs = [...this.w.all('timebomb')];
+        const near = (p: { x: number; y: number }, d: number) =>
+          bombs.some(b => Math.max(Math.abs(b.x - p.x), Math.abs(b.y - p.y)) <= d);
+        for (const [id, bomb] of dodging) if (!this.w.get(bomb, 'timebomb')) dodging.delete(id);
+        for (const id of ids) {
+          const g = this.w.get(id, 'grunt');
+          if (!g || dodging.has(id) || !near(g, 1)) continue;
+          const bomb = bombs.find(b => Math.max(Math.abs(b.x - g.x), Math.abs(b.y - g.y)) <= 1)!;
+          const spots: [number, number][] = [];
+          for (let dy = -3; dy <= 3; dy++)
+            for (let dx = -3; dx <= 3; dx++) {
+              const x = g.x + dx;
+              const y = g.y + dy;
+              if (!this.w.inBounds(x, y) || near({ x, y }, 1) || this.w.gruntAt(x, y)) continue;
+              if (
+                this.w.level(x, y) !== this.w.level(g.x, g.y) ||
+                /DEATH|HOLE|WATER|CLIFF|NOGO|BRICK|ROCK/.test(this.tile(x, y))
+              )
+                continue;
+              spots.push([x, y]);
+            }
+          spots.sort((p, q) => Math.hypot(p[0] - g.x, p[1] - g.y) - Math.hypot(q[0] - g.x, q[1] - g.y));
+          const spot = spots[0];
+          if (!spot) continue;
+          this.session.submit(0, { type: 'move', ids: [id], x: spot[0], y: spot[1] });
+          dodging.set(id, bomb.id);
+        }
         // A toy or a knockback makes a grunt forget the order: click again, like a player.
-        const idle = ids.filter(id => this.w.get(id, 'grunt') && this.settled(id));
+        const idle = ids.filter(id => this.w.get(id, 'grunt') && this.settled(id) && !dodging.has(id));
         if (idle.length && this.w.tick - lastOrder > 40) {
           this.session.submit(0, { type: 'attack', ids: idle, target });
           lastOrder = this.w.tick;
@@ -199,6 +308,16 @@ export class Walkthrough {
 
   attack(id: EntityId, target: EntityId): void {
     this.fight([id], target);
+  }
+
+  /** Stand still until an enemy comes within `range`, then throw at it (bomberz: while far). */
+  snipe(id: EntityId, target: EntityId, range = 4): void {
+    this.until(() => {
+      const e = this.w.get(target, 'grunt');
+      const g = this.grunt(id);
+      return !e || Math.max(Math.abs(e.x - g.x), Math.abs(e.y - g.y)) <= range;
+    }, `#${target} to come within ${range}`);
+    this.attack(id, target);
   }
 
   pickup(id: EntityId, x: number, y: number, item: string): void {

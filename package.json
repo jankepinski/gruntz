@@ -15,7 +15,8 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "prepare": "husky"
+    "prepare": "husky",
+    "levels": "apps/server/node_modules/.bin/tsx content/tools/build-levels.ts"
   },
   "devDependencies": {
     "@commitlint/cli": "^21.2.3",
