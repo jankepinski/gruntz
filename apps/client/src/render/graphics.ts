@@ -7,6 +7,10 @@ export type GrassMode = 'off' | 'tufts' | 'tuftsShadow' | 'velvet';
 export type ShadowQuality = 'off' | 'low' | 'high';
 export type Scenery = 'reduced' | 'full';
 export type GraphicsPreset = 'low' | 'medium' | 'high' | 'custom';
+/** Miniature look: blur towards the top and bottom of the screen (tilt-shift). */
+export type Miniature = 'off' | 'subtle' | 'strong';
+/** Colour look laid over the picture. */
+export type ColorStyle = 'natural' | 'vivid' | 'warm' | 'cool' | 'cinematic';
 
 export interface Graphics {
   preset: GraphicsPreset;
@@ -19,6 +23,18 @@ export interface Graphics {
   antialias: boolean;
   /** Colour grading and vignette. */
   grading: boolean;
+  colorStyle: ColorStyle;
+  miniature: Miniature;
+  /** Dark ink lines around shapes (cartoon look). */
+  outlines: boolean;
+  /** Crisper details (contrast-adaptive sharpening). */
+  sharpen: boolean;
+  /** Film grain. */
+  grain: boolean;
+  /** Colour fringes towards the screen edges (lens look). */
+  aberration: boolean;
+  /** Chunky pixels and fewer colours, like a game from 1999. */
+  retro: boolean;
   grass: GrassMode;
   scenery: Scenery;
   /** On-screen frame counter. */
@@ -35,6 +51,13 @@ export const GRAPHICS_PRESETS: Record<Exclude<GraphicsPreset, 'custom'>, Graphic
     bloom: false,
     antialias: false,
     grading: false,
+    colorStyle: 'natural',
+    miniature: 'off',
+    outlines: false,
+    sharpen: false,
+    grain: false,
+    aberration: false,
+    retro: false,
     grass: 'off',
     scenery: 'reduced',
   },
@@ -45,6 +68,13 @@ export const GRAPHICS_PRESETS: Record<Exclude<GraphicsPreset, 'custom'>, Graphic
     bloom: true,
     antialias: true,
     grading: true,
+    colorStyle: 'natural',
+    miniature: 'off',
+    outlines: false,
+    sharpen: true,
+    grain: false,
+    aberration: false,
+    retro: false,
     grass: 'velvet',
     scenery: 'full',
   },
@@ -55,10 +85,28 @@ export const GRAPHICS_PRESETS: Record<Exclude<GraphicsPreset, 'custom'>, Graphic
     bloom: true,
     antialias: true,
     grading: true,
+    colorStyle: 'natural',
+    miniature: 'subtle',
+    outlines: false,
+    sharpen: true,
+    grain: false,
+    aberration: false,
+    retro: false,
     grass: 'velvet',
     scenery: 'full',
   },
 };
+
+/** Options added after the first release, filled in from a preset for older saves. */
+export const LATER_OPTIONS = [
+  'colorStyle',
+  'miniature',
+  'outlines',
+  'sharpen',
+  'grain',
+  'aberration',
+  'retro',
+] as const satisfies readonly (keyof GraphicsLook)[];
 
 export const RESOLUTIONS = [0.5, 0.75, 1] as const;
 

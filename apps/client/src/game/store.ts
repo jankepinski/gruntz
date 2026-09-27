@@ -1,5 +1,5 @@
 import { useLayoutEffect, useState } from 'preact/hooks';
-import { presetGraphics, type Graphics } from '../render/graphics.ts';
+import { GRAPHICS_PRESETS, LATER_OPTIONS, presetGraphics, type Graphics } from '../render/graphics.ts';
 
 /** Minimal observable store for the UI. */
 export class Store<S extends object> {
@@ -59,7 +59,7 @@ function loadSettings(): Settings {
     edgeScroll: true,
     quality: 'high',
     graphics: presetGraphics('high'),
-    graphicsVersion: 3,
+    graphicsVersion: 4,
     playerName: '',
     volumes: { master: 0.8, sfx: 0.8, music: 0.35, voices: 0.8 },
   };
@@ -75,7 +75,12 @@ function loadSettings(): Settings {
       // v3: the medium and high presets grow velvet grass instead of tufts.
       if ((saved.graphicsVersion ?? 1) < 3 && graphics.grass === 'tufts' && graphics.shadows !== 'off')
         graphics.grass = 'velvet';
-      return { ...defaults, ...saved, graphics, graphicsVersion: 3 };
+      // v4: new post effects, taken from the preset the player had picked.
+      if ((saved.graphicsVersion ?? 1) < 4) {
+        const preset = GRAPHICS_PRESETS[graphics.preset === 'custom' ? 'high' : graphics.preset];
+        Object.assign(graphics, Object.fromEntries(LATER_OPTIONS.map(key => [key, preset[key]])));
+      }
+      return { ...defaults, ...saved, graphics, graphicsVersion: 4 };
     }
   } catch {
     /* ignore */
