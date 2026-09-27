@@ -41,6 +41,8 @@ export interface Task {
   args: unknown[];
 }
 
+// Handlers declare their own argument types (e.g. `duration: number`); `unknown[]` would reject them.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type TaskHandler = (w: World, id: EntityId, ...args: any[]) => void;
 const HANDLERS = new Map<string, TaskHandler>();
 
